@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Караван — планировщик груза для Albion Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Yeseva+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14222C; --panel:#1B2E3A; --panel2:#233A49; --line:#34505F; --bone:#ECE6D8; --mute:#94A8B4;
+  --amber:#E9B44C; --amber-ink:#2A1E05; --green:#62CB8F; --red:#EC7A68;
+  --paper:#EEE6D2; --paper2:#E4DAC1; --rule:#C9BC9E; --pink:#1D2932; --pmute:#5F6B6F; --pgreen:#1C6B43; --pred:#A93A2A; --seal:#9C3B2B;
+  --display:"Yeseva One",Georgia,"Times New Roman",serif;
+  --body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--bone);font:400 16px/1.45 var(--body);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 14px 56px}
+
+/* шапка */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.brand h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em;color:var(--bone)}
+.brand p{margin:6px 0 0;color:var(--mute);font-size:14px}
+.topctl{display:flex;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:7px;color:var(--mute);font-weight:500;font-size:14px}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--amber);color:var(--amber-ink)}
+select{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 30px 9px 11px;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);
+  background-position:calc(100% - 15px) 55%,calc(100% - 10px) 55%;background-size:5px 5px;background-repeat:no-repeat;max-width:100%}
+.tabs{margin-bottom:14px}
+
+.grid{display:grid;gap:16px}
+@media(min-width:980px){.grid{grid-template-columns:400px 1fr;align-items:start}.setup{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}}
+
+/* условия рейса */
+.setup{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.setup h2,.sheet h2,.journal h2{font:400 22px/1.15 var(--display);margin:0 0 12px}
+.fld{margin-bottom:14px}
+.fld>label,.lbl{display:block;font-size:13px;color:var(--mute);margin-bottom:5px}
+.route{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+.route select{width:100%}
+.swap{border:1px solid var(--line);background:var(--panel2);border-radius:10px;width:40px;height:40px;font-size:17px;line-height:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+input::placeholder{color:#6f8490}
+.hint{font-size:12px;color:var(--mute);margin-top:4px}
+.quick{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.quick button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 9px;font-size:12px;color:var(--mute)}
+.rowline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.switch{display:inline-flex;align-items:center;gap:9px;font-size:14px}
+.switch input{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:999px;background:var(--ink);border:1px solid var(--line);position:relative;margin:0;cursor:pointer;flex:none}
+.switch input::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--mute);transition:transform .15s}
+.switch input:checked{background:var(--amber);border-color:var(--amber)}
+.switch input:checked::after{transform:translateX(18px);background:var(--amber-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 10px;font-size:14px;color:var(--mute)}
+.chip[aria-pressed="true"]{background:var(--panel2);border-color:var(--amber);color:var(--bone)}
+.chipgroup{margin-bottom:10px}
+details.adv{border-top:1px solid var(--line);margin-top:4px;padding-top:10px}
+details.adv summary{cursor:pointer;color:var(--mute);font-size:14px;list-style:none}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:"+ ";color:var(--amber)}
+details.adv[open] summary::before{content:"− "}
+.advgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.advgrid label{font-size:12px;color:var(--mute);display:block;margin-bottom:4px;min-height:2.6em}
+.go{width:100%;border:0;border-radius:12px;background:var(--amber);color:var(--amber-ink);font-weight:700;font-size:17px;padding:13px 14px;margin-top:14px}
+.go:disabled{opacity:.6;cursor:progress}
+.gocap{font-size:12px;color:var(--mute);text-align:center;margin-top:7px}
+.bar{height:6px;border-radius:99px;background:var(--ink);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:0;background:var(--amber);transition:width .2s}
+
+/* накладная */
+.empty{border:1px dashed var(--line);border-radius:16px;padding:26px 20px;color:var(--mute)}
+.empty h2{font:400 24px/1.2 var(--display);color:var(--bone);margin:0 0 10px}
+.empty ol{margin:0;padding-left:20px}.empty li{margin:6px 0}
+.note{border-radius:12px;padding:11px 13px;margin-bottom:12px;font-size:14px}
+.note.warn{background:#3A2F14;border:1px solid #6B5620;color:#F1D795}
+.note.err{background:#3B1F1B;border:1px solid #7A3B30;color:#F6C3B8}
+.note button{margin-top:8px;border:1px solid currentColor;background:transparent;border-radius:8px;padding:6px 11px;font-weight:600}
+.sheet{background:var(--paper);color:var(--pink);border-radius:6px 6px 16px 16px;padding:18px 16px 16px;position:relative;box-shadow:0 14px 34px rgba(4,12,18,.5)}
+.sheet::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:repeating-linear-gradient(90deg,var(--seal) 0 14px,transparent 14px 22px);border-radius:6px 6px 0 0;opacity:.85}
+.sheethead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px}
+.sheethead h2{margin:0;font-size:26px}
+.sheethead span{font-size:13px;color:var(--pmute)}
+.sum{display:grid;gap:14px;margin:14px 0 6px}
+@media(min-width:640px){.sum{grid-template-columns:1.1fr 1fr;align-items:end}}
+.big b{display:block;font:400 44px/1 var(--display);color:var(--pgreen);letter-spacing:.01em}
+.big.neg b{color:var(--pred)}
+.big span{display:block;font-size:13px;color:var(--pmute);margin-bottom:5px}
+.big small{display:block;font-size:13px;color:var(--pmute);margin-top:7px}
+.kv{display:grid;grid-template-columns:repeat(3,auto);gap:4px 16px;justify-content:start;font-size:14px}
+.kv dt{color:var(--pmute);font-size:12px}.kv dd{margin:0;font-weight:600}
+.kv div{min-width:0}
+.gauge{margin-top:10px}
+.gauge .gl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.gauge .gl span:last-child{color:var(--pmute)}
+.gauge .gt{height:12px;background:var(--paper2);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.gauge .gt i{display:block;height:100%;background:var(--pink);transition:width .25s}
+.risk{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin:16px 0 4px;padding:14px 0}
+.risk h3,.list h3{font:400 18px/1.2 var(--display);margin:0 0 8px}
+.riskctl{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.riskctl input[type=range]{width:100%;accent-color:var(--seal)}
+.riskctl output{font-weight:700;min-width:3.2em;text-align:right}
+.riskfacts{display:grid;gap:6px;margin-top:10px;font-size:14px}
+@media(min-width:640px){.riskfacts{grid-template-columns:1fr 1fr}}
+.riskfacts b{font-weight:700}
+.pos{color:var(--pgreen)}.negc{color:var(--pred)}
+.mins{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--pmute);margin-top:8px}
+.mins input{width:74px;background:var(--paper2);border:1px solid var(--rule);color:var(--pink);padding:5px 8px;border-radius:6px}
+.list{margin-top:14px}
+.listhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.listhead span{font-size:13px;color:var(--pmute)}
+.item{border-bottom:1px dashed var(--rule)}
+.item:last-child{border-bottom:0}
+.irow{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center;padding:10px 0}
+.chk{appearance:none;-webkit-appearance:none;width:26px;height:26px;border:2px solid var(--pink);border-radius:4px;margin:0;cursor:pointer;display:grid;place-items:center;background:transparent}
+.chk:checked{background:var(--seal);border-color:var(--seal)}
+.chk:checked::after{content:"";width:12px;height:6px;border-left:3px solid var(--paper);border-bottom:3px solid var(--paper);transform:rotate(-45deg) translateY(-2px)}
+.ic{width:46px;height:46px;border-radius:8px;background:var(--paper2);border:1px solid var(--rule);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--pmute);position:relative;overflow:hidden;flex:none}
+.ic img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.imain{min-width:0;background:none;border:0;padding:0;text-align:left;color:inherit;display:block;width:100%}
+.iname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.done .iname{text-decoration:line-through;text-decoration-color:var(--seal)}
+.imeta{font-size:12.5px;color:var(--pmute);margin-top:2px}
+.imeta b{color:var(--pink);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.dot.g{background:#2E8B57}.dot.a{background:#C98A12}.dot.r{background:#B8402E}
+.iprofit{text-align:right;white-space:nowrap}
+.iprofit b{display:block;color:var(--pgreen);font-weight:700}
+.iprofit span{font-size:12.5px;color:var(--pmute)}
+.idet{background:var(--paper2);border-radius:8px;padding:11px 12px;margin:0 0 12px;font-size:13.5px}
+.idet dl{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;margin:0}
+.idet dt{color:var(--pmute);font-size:12px}.idet dd{margin:0;font-weight:600}
+.bought{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.bought label{font-size:12px;color:var(--pmute);display:block;margin-bottom:3px}
+.bought input{background:var(--paper);border:1px solid var(--rule);color:var(--pink);border-radius:6px;padding:6px 8px;width:120px}
+.step{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+.step button{border:0;background:transparent;width:34px;height:34px;font-size:18px;color:var(--pink)}
+.step b{min-width:2.4em;text-align:center}
+.tbtn{border:1px solid var(--pink);background:transparent;color:var(--pink);border-radius:8px;padding:8px 12px;font-weight:600;font-size:14px}
+.tbtn.solid{background:var(--pink);color:var(--paper)}
+.tbtn.quiet{border-color:var(--rule);color:var(--pmute);font-weight:500}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+details.left{margin-top:14px;font-size:13.5px}
+details.left summary{cursor:pointer;color:var(--pmute)}
+details.left li{margin:5px 0}
+details.left ul{padding-left:18px;margin:8px 0 0}
+.how{margin-top:14px;color:var(--mute);font-size:13px}
+.how summary{cursor:pointer}
+.how p{margin:8px 0 0;max-width:68ch}
+.foot{margin-top:26px;color:var(--mute);font-size:12.5px;max-width:78ch}
+.foot a{color:var(--bone)}
+
+/* журнал */
+.journal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.jsum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.jsum div{background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px}
+.jsum span{display:block;font-size:12px;color:var(--mute)}
+.jsum b{font:400 24px/1.2 var(--display)}
+.jrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.jrow small{display:block;color:var(--mute);font-size:12.5px}
+.jrow .p{font-weight:700}.jrow .p.up{color:var(--green)}.jrow .p.down{color:var(--red)}
+.jrow button{border:1px solid var(--line);background:transparent;border-radius:8px;color:var(--mute);padding:5px 9px;font-size:13px}
+
+/* окно и уведомление */
+.ovl{position:fixed;inset:0;background:rgba(6,14,20,.72);display:grid;place-items:center;padding:16px;z-index:20}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(440px,100%)}
+.dlg h3{font:400 22px/1.2 var(--display);margin:0 0 10px}
+.dlg p{margin:0 0 12px;color:var(--mute);font-size:14px}
+.dlg textarea{width:100%;height:190px;background:var(--ink);color:var(--bone);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace}
+.dlgacts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.dlgacts button{border:1px solid var(--line);background:transparent;border-radius:10px;padding:9px 14px;font-weight:600}
+.dlgacts .pri{background:var(--amber);border-color:var(--amber);color:var(--amber-ink)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--bone);color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:500;z-index:30;display:flex;gap:12px;align-items:center;max-width:calc(100vw - 28px)}
+.toast button{border:0;background:transparent;color:var(--seal);font-weight:700;padding:0}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Караван</h1>
+      <p>Собирает самый выгодный груз под твоё серебро и вес</p>
+    </div>
+    <div class="topctl">
+      <select id="server" aria-label="Сервер"></select>
+    </div>
+  </header>
+
+  <div class="seg tabs" role="tablist">
+    <button role="tab" data-tab="run" aria-selected="true">Рейс</button>
+    <button role="tab" data-tab="journal" aria-selected="false">Журнал</button>
+    <button role="tab" data-tab="craft" aria-selected="false">Крафт</button>
+  </div>
+
+  <main id="tab-run" class="grid">
+    <section class="setup" aria-label="Условия рейса">
+      <h2>Условия рейса</h2>
+      <div class="fld">
+        <div class="route">
+          <div><label for="src">Купить в</label><select id="src"></select></div>
+          <button class="swap" id="swap" type="button" aria-label="Поменять города местами" title="Поменять местами">⇄</button>
+          <div><label for="dst">Продать в</label><select id="dst"></select></div>
+        </div>
+      </div>
+      <div class="two fld">
+        <div>
+          <label for="budget">Серебро на закупку</label>
+          <input id="budget" type="text" inputmode="text" autocomplete="off" placeholder="например 2 млн">
+          <div class="quick" id="budgetQuick">
+            <button type="button" data-v="500000">500к</button><button type="button" data-v="2000000">2 млн</button><button type="button" data-v="10000000">10 млн</button>
+          </div>
+        </div>
+        <div>
+          <label for="weight">Свободный вес, кг</label>
+          <input id="weight" type="number" inputmode="decimal" min="0" step="1" placeholder="без лимита">
+          <div class="hint">Макс. нагрузка минус то, что уже несёшь</div>
+        </div>
+      </div>
+      <div class="rowline">
+        <label class="switch"><input type="checkbox" id="premium"> Премиум-статус</label>
+        <div class="seg" id="mode" role="group" aria-label="Как продавать">
+          <button type="button" data-v="instant" aria-pressed="true">Продать сразу</button>
+          <button type="button" data-v="order" aria-pressed="false">Свой ордер</button>
+        </div>
+      </div>
+      <div class="chipgroup"><span class="lbl">Что возить</span><div class="chips" id="cats"></div></div>
+      <div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
+      <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div>
+
+      <details class="adv">
+        <summary>Тонкая настройка</summary>
+        <div class="advgrid">
+          <div><label for="maxAge">Не брать цены старше, часов</label><input id="maxAge" type="number" min="1" step="1"></div>
+          <div><label for="halfLife">Доверие к цене падает вдвое за, часов</label><input id="halfLife" type="number" min="1" step="1"></div>
+          <div><label for="minRoi">Мин. доходность позиции, %</label><input id="minRoi" type="number" min="0" step="1"></div>
+          <div><label for="maxRoi">Отсекать доходность выше, % (мусорные цены)</label><input id="maxRoi" type="number" min="10" step="10"></div>
+          <div><label for="minPosProfit">Мин. прибыль с позиции, серебро</label><input id="minPosProfit" type="number" min="0" step="500"></div>
+          <div><label for="maxPerPos">Макс. штук одной вещи</label><input id="maxPerPos" type="number" min="1" step="1"></div>
+          <div><label for="share">Брать не больше этой доли дневного объёма, %</label><input id="share" type="number" min="1" max="100" step="1"></div>
+          <div><label for="slip">Каждая следующая штука хуже по цене на, %</label><input id="slip" type="number" min="0" step="0.5"></div>
+          <div><label for="taxPremium">Налог с премиумом, %</label><input id="taxPremium" type="number" min="0" step="0.5"></div>
+          <div><label for="taxFree">Налог без премиума, %</label><input id="taxFree" type="number" min="0" step="0.5"></div>
+          <div><label for="setupFee">Сбор за выставление ордера, %</label><input id="setupFee" type="number" min="0" step="0.5"></div>
+        </div>
+      </details>
+
+      <button class="go" id="go" type="button">Собрать груз</button>
+      <div class="gocap" id="gocap"></div>
+      <div class="bar" id="bar" hidden><i></i></div>
+    </section>
+
+    <section id="result" aria-live="polite"></section>
+  </main>
+
+  <main id="tab-journal" hidden></main>
+  <main id="tab-craft" class="grid" hidden></main>
+
+  <details class="how">
+    <summary>Как это считается</summary>
+    <p>Караван берёт самую дешёвую цену продажи в городе закупки и лучшую цену в городе сбыта, вычитает налог и собирает набор позиций, который даёт максимум прибыли и при этом влезает в твоё серебро и вес. Старые цены часто уже неактуальны, поэтому прибыль умножается на доверие: чем старше цена, тем меньше вклад позиции. Количество ограничено долей дневного объёма продаж, чтобы не везти то, что не продать.</p>
+    <p>Это оценка, а не гарантия: перед покупкой сверь цену в игре и вычеркни позицию, если она разошлась. Оставшийся груз пересоберётся сам.</p>
+  </details>
+  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере.</p>
+</div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+/*__CORE__*/
+</script>
+<script>
+/*__UI__*/
+</script>
+<script>
+/*__CRAFT__*/
+</script>
+</body>
+</html>

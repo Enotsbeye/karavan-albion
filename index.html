@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Караван — планировщик груза для Albion Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Yeseva+One&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14222C; --panel:#1B2E3A; --panel2:#233A49; --line:#34505F; --bone:#ECE6D8; --mute:#94A8B4;
+  --amber:#E9B44C; --amber-ink:#2A1E05; --green:#62CB8F; --red:#EC7A68;
+  --paper:#EEE6D2; --paper2:#E4DAC1; --rule:#C9BC9E; --pink:#1D2932; --pmute:#5F6B6F; --pgreen:#1C6B43; --pred:#A93A2A; --seal:#9C3B2B;
+  --display:"Yeseva One",Georgia,"Times New Roman",serif;
+  --body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--bone);font:400 16px/1.45 var(--body);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 14px 56px}
+
+/* шапка */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.brand h1{font:400 34px/1 var(--display);margin:0;letter-spacing:.01em;color:var(--bone)}
+.brand p{margin:6px 0 0;color:var(--mute);font-size:14px}
+.topctl{display:flex;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:7px;color:var(--mute);font-weight:500;font-size:14px}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--amber);color:var(--amber-ink)}
+select{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 30px 9px 11px;appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);
+  background-position:calc(100% - 15px) 55%,calc(100% - 10px) 55%;background-size:5px 5px;background-repeat:no-repeat;max-width:100%}
+.tabs{margin-bottom:14px}
+
+.grid{display:grid;gap:16px}
+@media(min-width:980px){.grid{grid-template-columns:400px 1fr;align-items:start}.setup{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}}
+
+/* условия рейса */
+.setup{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.setup h2,.sheet h2,.journal h2{font:400 22px/1.15 var(--display);margin:0 0 12px}
+.fld{margin-bottom:14px}
+.fld>label,.lbl{display:block;font-size:13px;color:var(--mute);margin-bottom:5px}
+.route{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:end}
+.route select{width:100%}
+.swap{border:1px solid var(--line);background:var(--panel2);border-radius:10px;width:40px;height:40px;font-size:17px;line-height:1}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0}
+input::placeholder{color:#6f8490}
+.hint{font-size:12px;color:var(--mute);margin-top:4px}
+.quick{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.quick button{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 9px;font-size:12px;color:var(--mute)}
+.rowline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.switch{display:inline-flex;align-items:center;gap:9px;font-size:14px}
+.switch input{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:999px;background:var(--ink);border:1px solid var(--line);position:relative;margin:0;cursor:pointer;flex:none}
+.switch input::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:var(--mute);transition:transform .15s}
+.switch input:checked{background:var(--amber);border-color:var(--amber)}
+.switch input:checked::after{transform:translateX(18px);background:var(--amber-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 10px;font-size:14px;color:var(--mute)}
+.chip[aria-pressed="true"]{background:var(--panel2);border-color:var(--amber);color:var(--bone)}
+.chipgroup{margin-bottom:10px}
+details.adv{border-top:1px solid var(--line);margin-top:4px;padding-top:10px}
+details.adv summary{cursor:pointer;color:var(--mute);font-size:14px;list-style:none}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:"+ ";color:var(--amber)}
+details.adv[open] summary::before{content:"− "}
+.advgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.advgrid label{font-size:12px;color:var(--mute);display:block;margin-bottom:4px;min-height:2.6em}
+.go{width:100%;border:0;border-radius:12px;background:var(--amber);color:var(--amber-ink);font-weight:700;font-size:17px;padding:13px 14px;margin-top:14px}
+.go:disabled{opacity:.6;cursor:progress}
+.gocap{font-size:12px;color:var(--mute);text-align:center;margin-top:7px}
+.bar{height:6px;border-radius:99px;background:var(--ink);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;width:0;background:var(--amber);transition:width .2s}
+
+/* накладная */
+.empty{border:1px dashed var(--line);border-radius:16px;padding:26px 20px;color:var(--mute)}
+.empty h2{font:400 24px/1.2 var(--display);color:var(--bone);margin:0 0 10px}
+.empty ol{margin:0;padding-left:20px}.empty li{margin:6px 0}
+.note{border-radius:12px;padding:11px 13px;margin-bottom:12px;font-size:14px}
+.note.warn{background:#3A2F14;border:1px solid #6B5620;color:#F1D795}
+.note.err{background:#3B1F1B;border:1px solid #7A3B30;color:#F6C3B8}
+.note button{margin-top:8px;border:1px solid currentColor;background:transparent;border-radius:8px;padding:6px 11px;font-weight:600}
+.sheet{background:var(--paper);color:var(--pink);border-radius:6px 6px 16px 16px;padding:18px 16px 16px;position:relative;box-shadow:0 14px 34px rgba(4,12,18,.5)}
+.sheet::before{content:"";position:absolute;left:0;right:0;top:0;height:7px;background:repeating-linear-gradient(90deg,var(--seal) 0 14px,transparent 14px 22px);border-radius:6px 6px 0 0;opacity:.85}
+.sheethead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:4px}
+.sheethead h2{margin:0;font-size:26px}
+.sheethead span{font-size:13px;color:var(--pmute)}
+.sum{display:grid;gap:14px;margin:14px 0 6px}
+@media(min-width:640px){.sum{grid-template-columns:1.1fr 1fr;align-items:end}}
+.big b{display:block;font:400 44px/1 var(--display);color:var(--pgreen);letter-spacing:.01em}
+.big.neg b{color:var(--pred)}
+.big span{display:block;font-size:13px;color:var(--pmute);margin-bottom:5px}
+.big small{display:block;font-size:13px;color:var(--pmute);margin-top:7px}
+.kv{display:grid;grid-template-columns:repeat(3,auto);gap:4px 16px;justify-content:start;font-size:14px}
+.kv dt{color:var(--pmute);font-size:12px}.kv dd{margin:0;font-weight:600}
+.kv div{min-width:0}
+.gauge{margin-top:10px}
+.gauge .gl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.gauge .gl span:last-child{color:var(--pmute)}
+.gauge .gt{height:12px;background:var(--paper2);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.gauge .gt i{display:block;height:100%;background:var(--pink);transition:width .25s}
+.risk{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);margin:16px 0 4px;padding:14px 0}
+.risk h3,.list h3{font:400 18px/1.2 var(--display);margin:0 0 8px}
+.riskctl{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.riskctl input[type=range]{width:100%;accent-color:var(--seal)}
+.riskctl output{font-weight:700;min-width:3.2em;text-align:right}
+.riskfacts{display:grid;gap:6px;margin-top:10px;font-size:14px}
+@media(min-width:640px){.riskfacts{grid-template-columns:1fr 1fr}}
+.riskfacts b{font-weight:700}
+.pos{color:var(--pgreen)}.negc{color:var(--pred)}
+.mins{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--pmute);margin-top:8px}
+.mins input{width:74px;background:var(--paper2);border:1px solid var(--rule);color:var(--pink);padding:5px 8px;border-radius:6px}
+.list{margin-top:14px}
+.listhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.listhead span{font-size:13px;color:var(--pmute)}
+.item{border-bottom:1px dashed var(--rule)}
+.item:last-child{border-bottom:0}
+.irow{display:grid;grid-template-columns:auto auto 1fr auto;gap:10px;align-items:center;padding:10px 0}
+.chk{appearance:none;-webkit-appearance:none;width:26px;height:26px;border:2px solid var(--pink);border-radius:4px;margin:0;cursor:pointer;display:grid;place-items:center;background:transparent}
+.chk:checked{background:var(--seal);border-color:var(--seal)}
+.chk:checked::after{content:"";width:12px;height:6px;border-left:3px solid var(--paper);border-bottom:3px solid var(--paper);transform:rotate(-45deg) translateY(-2px)}
+.ic{width:46px;height:46px;border-radius:8px;background:var(--paper2);border:1px solid var(--rule);display:grid;place-items:center;font-weight:700;font-size:13px;color:var(--pmute);position:relative;overflow:hidden;flex:none}
+.ic img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.imain{min-width:0;background:none;border:0;padding:0;text-align:left;color:inherit;display:block;width:100%}
+.iname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.done .iname{text-decoration:line-through;text-decoration-color:var(--seal)}
+.imeta{font-size:12.5px;color:var(--pmute);margin-top:2px}
+.imeta b{color:var(--pink);font-weight:600}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:1px}
+.dot.g{background:#2E8B57}.dot.a{background:#C98A12}.dot.r{background:#B8402E}
+.iprofit{text-align:right;white-space:nowrap}
+.iprofit b{display:block;color:var(--pgreen);font-weight:700}
+.iprofit span{font-size:12.5px;color:var(--pmute)}
+.idet{background:var(--paper2);border-radius:8px;padding:11px 12px;margin:0 0 12px;font-size:13.5px}
+.idet dl{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;margin:0}
+.idet dt{color:var(--pmute);font-size:12px}.idet dd{margin:0;font-weight:600}
+.bought{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px solid var(--rule)}
+.bought label{font-size:12px;color:var(--pmute);display:block;margin-bottom:3px}
+.bought input{background:var(--paper);border:1px solid var(--rule);color:var(--pink);border-radius:6px;padding:6px 8px;width:120px}
+.step{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+.step button{border:0;background:transparent;width:34px;height:34px;font-size:18px;color:var(--pink)}
+.step b{min-width:2.4em;text-align:center}
+.tbtn{border:1px solid var(--pink);background:transparent;color:var(--pink);border-radius:8px;padding:8px 12px;font-weight:600;font-size:14px}
+.tbtn.solid{background:var(--pink);color:var(--paper)}
+.tbtn.quiet{border-color:var(--rule);color:var(--pmute);font-weight:500}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+details.left{margin-top:14px;font-size:13.5px}
+details.left summary{cursor:pointer;color:var(--pmute)}
+details.left li{margin:5px 0}
+details.left ul{padding-left:18px;margin:8px 0 0}
+.how{margin-top:14px;color:var(--mute);font-size:13px}
+.how summary{cursor:pointer}
+.how p{margin:8px 0 0;max-width:68ch}
+.foot{margin-top:26px;color:var(--mute);font-size:12.5px;max-width:78ch}
+.foot a{color:var(--bone)}
+
+/* журнал */
+.journal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.jsum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.jsum div{background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px}
+.jsum span{display:block;font-size:12px;color:var(--mute)}
+.jsum b{font:400 24px/1.2 var(--display)}
+.jrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.jrow small{display:block;color:var(--mute);font-size:12.5px}
+.jrow .p{font-weight:700}.jrow .p.up{color:var(--green)}.jrow .p.down{color:var(--red)}
+.jrow button{border:1px solid var(--line);background:transparent;border-radius:8px;color:var(--mute);padding:5px 9px;font-size:13px}
+
+/* окно и уведомление */
+.ovl{position:fixed;inset:0;background:rgba(6,14,20,.72);display:grid;place-items:center;padding:16px;z-index:20}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;width:min(440px,100%)}
+.dlg h3{font:400 22px/1.2 var(--display);margin:0 0 10px}
+.dlg p{margin:0 0 12px;color:var(--mute);font-size:14px}
+.dlg textarea{width:100%;height:190px;background:var(--ink);color:var(--bone);border:1px solid var(--line);border-radius:10px;padding:10px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace}
+.dlgacts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.dlgacts button{border:1px solid var(--line);background:transparent;border-radius:10px;padding:9px 14px;font-weight:600}
+.dlgacts .pri{background:var(--amber);border-color:var(--amber);color:var(--amber-ink)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--bone);color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:500;z-index:30;display:flex;gap:12px;align-items:center;max-width:calc(100vw - 28px)}
+.toast button{border:0;background:transparent;color:var(--seal);font-weight:700;padding:0}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Караван</h1>
+      <p>Собирает самый выгодный груз под твоё серебро и вес</p>
+    </div>
+    <div class="topctl">
+      <select id="server" aria-label="Сервер"></select>
+    </div>
+  </header>
+
+  <div class="seg tabs" role="tablist">
+    <button role="tab" data-tab="run" aria-selected="true">Рейс</button>
+    <button role="tab" data-tab="journal" aria-selected="false">Журнал</button>
+    <button role="tab" data-tab="craft" aria-selected="false">Крафт</button>
+  </div>
+
+  <main id="tab-run" class="grid">
+    <section class="setup" aria-label="Условия рейса">
+      <h2>Условия рейса</h2>
+      <div class="fld">
+        <div class="route">
+          <div><label for="src">Купить в</label><select id="src"></select></div>
+          <button class="swap" id="swap" type="button" aria-label="Поменять города местами" title="Поменять местами">⇄</button>
+          <div><label for="dst">Продать в</label><select id="dst"></select></div>
+        </div>
+      </div>
+      <div class="two fld">
+        <div>
+          <label for="budget">Серебро на закупку</label>
+          <input id="budget" type="text" inputmode="text" autocomplete="off" placeholder="например 2 млн">
+          <div class="quick" id="budgetQuick">
+            <button type="button" data-v="500000">500к</button><button type="button" data-v="2000000">2 млн</button><button type="button" data-v="10000000">10 млн</button>
+          </div>
+        </div>
+        <div>
+          <label for="weight">Свободный вес, кг</label>
+          <input id="weight" type="number" inputmode="decimal" min="0" step="1" placeholder="без лимита">
+          <div class="hint">Макс. нагрузка минус то, что уже несёшь</div>
+        </div>
+      </div>
+      <div class="rowline">
+        <label class="switch"><input type="checkbox" id="premium"> Премиум-статус</label>
+        <div class="seg" id="mode" role="group" aria-label="Как продавать">
+          <button type="button" data-v="instant" aria-pressed="true">Продать сразу</button>
+          <button type="button" data-v="order" aria-pressed="false">Свой ордер</button>
+        </div>
+      </div>
+      <div class="chipgroup"><span class="lbl">Что возить</span><div class="chips" id="cats"></div></div>
+      <div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
+      <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div>
+
+      <details class="adv">
+        <summary>Тонкая настройка</summary>
+        <div class="advgrid">
+          <div><label for="maxAge">Не брать цены старше, часов</label><input id="maxAge" type="number" min="1" step="1"></div>
+          <div><label for="halfLife">Доверие к цене падает вдвое за, часов</label><input id="halfLife" type="number" min="1" step="1"></div>
+          <div><label for="minRoi">Мин. доходность позиции, %</label><input id="minRoi" type="number" min="0" step="1"></div>
+          <div><label for="maxRoi">Отсекать доходность выше, % (мусорные цены)</label><input id="maxRoi" type="number" min="10" step="10"></div>
+          <div><label for="minPosProfit">Мин. прибыль с позиции, серебро</label><input id="minPosProfit" type="number" min="0" step="500"></div>
+          <div><label for="maxPerPos">Макс. штук одной вещи</label><input id="maxPerPos" type="number" min="1" step="1"></div>
+          <div><label for="share">Брать не больше этой доли дневного объёма, %</label><input id="share" type="number" min="1" max="100" step="1"></div>
+          <div><label for="slip">Каждая следующая штука хуже по цене на, %</label><input id="slip" type="number" min="0" step="0.5"></div>
+          <div><label for="taxPremium">Налог с премиумом, %</label><input id="taxPremium" type="number" min="0" step="0.5"></div>
+          <div><label for="taxFree">Налог без премиума, %</label><input id="taxFree" type="number" min="0" step="0.5"></div>
+          <div><label for="setupFee">Сбор за выставление ордера, %</label><input id="setupFee" type="number" min="0" step="0.5"></div>
+        </div>
+      </details>
+
+      <button class="go" id="go" type="button">Собрать груз</button>
+      <div class="gocap" id="gocap"></div>
+      <div class="bar" id="bar" hidden><i></i></div>
+    </section>
+
+    <section id="result" aria-live="polite"></section>
+  </main>
+
+  <main id="tab-journal" hidden></main>
+  <main id="tab-craft" class="grid" hidden></main>
+
+  <details class="how">
+    <summary>Как это считается</summary>
+    <p>Караван берёт самую дешёвую цену продажи в городе закупки и лучшую цену в городе сбыта, вычитает налог и собирает набор позиций, который даёт максимум прибыли и при этом влезает в твоё серебро и вес. Старые цены часто уже неактуальны, поэтому прибыль умножается на доверие: чем старше цена, тем меньше вклад позиции. Количество ограничено долей дневного объёма продаж, чтобы не везти то, что не продать.</p>
+    <p>Это оценка, а не гарантия: перед покупкой сверь цену в игре и вычеркни позицию, если она разошлась. Оставшийся груз пересоберётся сам.</p>
+  </details>
+  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере.</p>
+</div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ===== Караван: расчётное ядро (без DOM) ===== */
+const DB = {"gear":[["2H_BOW","Лук","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_WARBOW","Боевой лук","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_LONGBOW","Длинный лук","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_LONGBOW_UNDEAD","Шепчущий лук","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_BOW_HELL","Воющий лук","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_BOW_KEEPER","Лук Бадона","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_BOW_AVALON","Туманный пронзатель","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_BOW_CRYSTAL","Лук небесного странника","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_CROSSBOW","Арбалет","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_CROSSBOWLARGE","Тяжелый арбалет","ranged",[6.8,10.1,15.2,22.8,34.2]],["MAIN_1HCROSSBOW","Легкий арбалет","ranged",[5.1,7.6,11.4,17.1,25.6]],["2H_REPEATINGCROSSBOW_UNDEAD","Плачущий арбалет","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALCROSSBOW_HELL","Самострелы","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_CROSSBOWLARGE_MORGANA","Осадный арбалет","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_CROSSBOW_CANNON_AVALON","Творец энергии","ranged",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALCROSSBOW_CRYSTAL","Искрящиеся бластеры","ranged",[6.8,10.1,15.2,22.8,34.2]],["MAIN_CURSEDSTAFF","Проклятый посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_CURSEDSTAFF","Большой проклятый посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_DEMONICSTAFF","Демонический посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_CURSEDSTAFF_UNDEAD","Гибельный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_SKULLORB_HELL","Проклятый череп","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_CURSEDSTAFF_MORGANA","Посох обреченности","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_CURSEDSTAFF_AVALON","Призыватель теней","magic",[5.1,7.6,11.4,17.1,25.6]],["MAIN_CURSEDSTAFF_CRYSTAL","Посох гниения","magic",[5.1,7.6,11.4,17.1,25.6]],["MAIN_FIRESTAFF","Огненный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_FIRESTAFF","Большой огненный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_INFERNOSTAFF","Адский посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_FIRESTAFF_KEEPER","Посох лесного пожара","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_FIRESTAFF_HELL","Посох серы","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_INFERNOSTAFF_MORGANA","Пылающий посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_FIRE_RINGPAIR_AVALON","Песнь рассвета","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_FIRESTAFF_CRYSTAL","Посох пламенного странника","magic",[5.1,7.6,11.4,17.1,25.6]],["MAIN_FROSTSTAFF","Морозный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_FROSTSTAFF","Большой морозный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_GLACIALSTAFF","Ледяной посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_FROSTSTAFF_KEEPER","Посох инея","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_ICEGAUNTLETS_HELL","Заледенелый посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_ICECRYSTAL_UNDEAD","Призма вечного холода","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_FROSTSTAFF_AVALON","Леденящий вой","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_FROSTSTAFF_CRYSTAL","Снежный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_ARCANESTAFF","Мистический посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_ARCANESTAFF","Большой мистический посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_ENIGMATICSTAFF","Загадочный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_ARCANESTAFF_UNDEAD","Ведьмовской посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_ARCANESTAFF_HELL","Оккультный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_ENIGMATICORB_MORGANA","Средоточие злобы","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_ARCANE_RINGPAIR_AVALON","Песнь заката","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_ARCANESTAFF_CRYSTAL","Астральный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_HOLYSTAFF","Священный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_HOLYSTAFF","Большой священный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_DIVINESTAFF","Божественный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_HOLYSTAFF_MORGANA","Посох жизни","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_HOLYSTAFF_HELL","Посох падших","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_HOLYSTAFF_UNDEAD","Посох искупления","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_HOLYSTAFF_AVALON","Благодатный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_HOLYSTAFF_CRYSTAL","Посох возвышения","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_NATURESTAFF","Древесный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_NATURESTAFF","Большой древесный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_WILDSTAFF","Дикий посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_NATURESTAFF_KEEPER","Друидский посох","magic",[5.1,7.6,11.4,17.1,25.6]],["2H_NATURESTAFF_HELL","Посох порчи","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_NATURESTAFF_KEEPER","Неудержимый посох","magic",[6.8,10.1,15.2,22.8,34.2]],["MAIN_NATURESTAFF_AVALON","Посох железного корня","magic",[5.1,7.6,11.4,17.1,25.6]],["MAIN_NATURESTAFF_CRYSTAL","Кузнечный посох","magic",[5.1,7.6,11.4,17.1,25.6]],["MAIN_DAGGER","Кинжал","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_DAGGERPAIR","Парные кинжалы","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_CLAWPAIR","Когти","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_RAPIER_MORGANA","Кровопускатель","melee",[5.1,7.6,11.4,17.1,25.6]],["MAIN_DAGGER_HELL","Клык демона","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_IRONGAUNTLETS_HELL","Черные перчатки","melee",[6.8,10.1,15.2,22.8,34.2],3],["2H_DUALSICKLE_UNDEAD","Вестники смерти","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DAGGER_KATAR_AVALON","Укротитель ярости","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DAGGERPAIR_CRYSTAL","Парные истребители","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_SPEAR","Копье","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_SPEAR","Пика","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_GLAIVE","Глефа","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_SPEAR_KEEPER","Копье цапли","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_HARPOON_HELL","Охотник за душами","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_TRIDENT_UNDEAD","Трезубец","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_SPEAR_LANCE_AVALON","Копье рассвета","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_GLAIVE_CRYSTAL","Глефа разлома","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_AXE","Боевой топор","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_AXE","Большой топор","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_HALBERD","Алебарда","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_HALBERD_MORGANA","Падальщик","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_SCYTHE_HELL","Адская коса","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALAXE_KEEPER","Медвежьи лапы","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_AXE_AVALON","Разрушитель миров","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_SCYTHE_CRYSTAL","Хрустальный жнец","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_SWORD","Палаш","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_CLAYMORE","Клеймор","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALSWORD","Парные мечи","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_SCIMITAR_MORGANA","Королевский меч","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_CLEAVER_HELL","Меч резни","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALSCIMITAR_UNDEAD","Парные галатины","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_CLAYMORE_AVALON","Царетворец","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_SWORD_CRYSTAL","Клинок бесконечности","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_QUARTERSTAFF","Боевой шест","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_IRONCLADEDSTAFF","Железный посох","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DOUBLEBLADEDSTAFF","Острый шест","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_COMBATSTAFF_MORGANA","Посох черного монаха","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_TWINSCYTHE_HELL","Коса душ","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_ROCKSTAFF_KEEPER","Посох равновесия","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_QUARTERSTAFF_AVALON","Искатель Грааля","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DOUBLEBLADEDSTAFF_CRYSTAL","Парный призрачный клинок","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_HAMMER","Молот","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_POLEHAMMER","Чекан","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_HAMMER","Большой молот","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_HAMMER_UNDEAD","Могильный молот","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALHAMMER_HELL","Молоты кузни","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_RAM_KEEPER","Хранитель рощи","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_HAMMER_AVALON","Длань правосудия","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_HAMMER_CRYSTAL","Молот истинных снарядов","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_MACE","Булава","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_MACE","Тяжелая булава","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_FLAIL","Моргенштерн","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_ROCKMACE_KEEPER","Каменная булава","melee",[5.1,7.6,11.4,17.1,25.6]],["MAIN_MACE_HELL","Булава инкуба","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_MACE_MORGANA","Булава Камланна","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_DUALMACE_AVALON","Хранители клятвы","melee",[6.8,10.1,15.2,22.8,34.2]],["MAIN_MACE_CRYSTAL","Грозовой монарх","melee",[5.1,7.6,11.4,17.1,25.6]],["2H_KNUCKLES_SET1","Перчатки крушителя","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_SET2","Боевые наручи","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_SET3","Шипастые рукавицы","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_KEEPER","Медвежьи перчатки","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_HELL","Адские длани","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_MORGANA","Вороний цестус","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_AVALON","Кулаки Авалона","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_KNUCKLES_CRYSTAL","Силовые наручи","melee",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_SET1","Посох бродяги","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_SET2","Непреодолимый посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_SET3","Первобытный посох","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_MORGANA","Посох Кровавой луны","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_HELL","Посох порождений Ада","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_KEEPER","Рунный посох Земли","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_AVALON","Светоч","magic",[6.8,10.1,15.2,22.8,34.2]],["2H_SHAPESHIFTER_CRYSTAL","Посох неподвижного взгляда","magic",[6.8,10.1,15.2,22.8,34.2]],["OFF_SHIELD","Щит","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_TOWERSHIELD_UNDEAD","Саркофаг","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_SHIELD_HELL","Щит негодяя","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_SPIKEDSHIELD_MORGANA","Лицелом","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_SHIELD_AVALON","Эгида звезд","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_SHIELD_CRYSTAL","Несокрушимый бастион","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_BOOK","Книга заклинаний","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_ORB_MORGANA","Око тайны","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_DEMONSKULL_HELL","Череп-трофей","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_TOTEM_KEEPER","Корень природы","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_CENSER_AVALON","Небесное кадило","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_TOME_CRYSTAL","Гримуар сокрытого времени","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_TORCH","Факел","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_HORN_KEEPER","Туманный зов","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_TALISMAN_AVALON","Священный скипетр","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_LAMP_UNDEAD","Могильная свеча","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_JESTERCANE_HELL","Зловещая трость","offhand",[1.7,2.5,3.8,5.7,8.5]],["OFF_TORCH_CRYSTAL","Факел синего пламени","offhand",[1.7,2.5,3.8,5.7,8.5]],["CAPE","Плащ","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_BRIDGEWATCH","Накидка города Bridgewatch","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_FORTSTERLING","Накидка города Fort Sterling","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_LYMHURST","Накидка города Lymhurst","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_MARTLOCK","Накидка города Martlock","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_THETFORD","Накидка города Thetford","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_CAERLEON","Плащ города Caerleon","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_FW_BRECILIEN","Плащ города Brecilien","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_AVALON","Авалонский плащ","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_SMUGGLER","Плащ контрабандиста","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_HERETIC","Плащ Еретиков","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_UNDEAD","Плащ Нежити","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_KEEPER","Плащ Хранителей","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_MORGANA","Плащ Морганы","cape",[1.7,2.5,3.8,5.7,8.5]],["CAPEITEM_DEMON","Плащ Демонов","cape",[1.7,2.5,3.8,5.7,8.5]],["BAG","Сумка","bag",[3.4,5.1,7.6,11.4,17.1]],["BAG_INSIGHT","Кошель интуиции","bag",[3.4,5.1,7.6,11.4,17.1]],["HEAD_PLATE_SET1","Шлем солдата","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_SET1","Броня солдата","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_SET1","Сапоги солдата","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_SET2","Шлем рыцаря","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_SET2","Броня рыцаря","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_SET2","Сапоги рыцаря","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_SET3","Шлем хранителя","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_SET3","Броня хранителя","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_SET3","Сапоги хранителя","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_UNDEAD","Могильный шлем","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_UNDEAD","Могильная броня","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_UNDEAD","Могильные сапоги","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_HELL","Демонический шлем","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_HELL","Демоническая броня","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_HELL","Демонические сапоги","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_KEEPER","Шлем вершителя","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_KEEPER","Броня вершителя","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_KEEPER","Сапоги вершителя","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_FEY","Шлем сумеречного ткача","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_FEY","Броня сумеречного ткача","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_FEY","Сапоги сумеречного ткача","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_AVALON","Шлем доблести","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_AVALON","Броня доблести","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_AVALON","Сапоги доблести","plate",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_SET1","Капюшон наемника","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_SET1","Куртка наемника","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_SET1","Ботинки наемника","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_SET2","Капюшон охотника","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_SET2","Куртка охотника","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_SET2","Ботинки охотника","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_SET3","Капюшон убийцы","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_SET3","Куртка убийцы","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_SET3","Ботинки убийцы","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_MORGANA","Капюшон лазутчика","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_MORGANA","Куртка лазутчика","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_MORGANA","Ботинки лазутчика","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_HELL","Адский капюшон","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_HELL","Адская куртка","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_HELL","Адские ботинки","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_UNDEAD","Капюшон призрака","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_UNDEAD","Куртка призрака","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_UNDEAD","Ботинки призрака","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_FEY","Капюшон туманного охотника","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_FEY","Куртка туманного охотника","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_FEY","Ботинки туманного охотника","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_AVALON","Капюшон упорства","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_AVALON","Куртка упорства","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_AVALON","Ботинки упорства","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_DRAGON","Капюшон драконоборца","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_DRAGON","Куртка драконоборца","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_DRAGON","Сапоги драконоборца","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_SET1","Колпак ученого","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_SET1","Мантия ученого","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_SET1","Сандалии ученого","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_SET2","Колпак клирика","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_SET2","Мантия клирика","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_SET2","Сандалии клирика","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_SET3","Колпак чародея","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_SET3","Мантия чародея","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_SET3","Сандалии чародея","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_KEEPER","Колпак друида","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_KEEPER","Мантия друида","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_KEEPER","Сандалии друида","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_HELL","Дьявольский колпак","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_HELL","Дьявольская мантия","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_HELL","Дьявольские сандалии","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_MORGANA","Колпак культиста","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_MORGANA","Мантия культиста","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_MORGANA","Сандалии культиста","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_FEY","Шляпа из сказочной чешуи","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_FEY","Мантия из сказочной чешуи","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_FEY","Сандалии из сказочной чешуи","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_AVALON","Колпак чистоты","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_AVALON","Мантия чистоты","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_AVALON","Сандалии чистоты","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_CLOTH_ROYAL","Королевский колпак","cloth",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_CLOTH_ROYAL","Королевская мантия","cloth",[3.4,5.1,7.6,11.4,17.1]],["SHOES_CLOTH_ROYAL","Королевские сандалии","cloth",[1.7,2.5,3.8,5.7,8.5]],["HEAD_LEATHER_ROYAL","Королевский капюшон","leather",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_LEATHER_ROYAL","Королевская куртка","leather",[3.4,5.1,7.6,11.4,17.1]],["SHOES_LEATHER_ROYAL","Королевские ботинки","leather",[1.7,2.5,3.8,5.7,8.5]],["HEAD_PLATE_ROYAL","Королевский шлем","plate",[1.7,2.5,3.8,5.7,8.5]],["ARMOR_PLATE_ROYAL","Королевская броня","plate",[3.4,5.1,7.6,11.4,17.1]],["SHOES_PLATE_ROYAL","Королевские сапоги","plate",[1.7,2.5,3.8,5.7,8.5]]],"res":[["WOOD","raw",[["Бревна сосны",0.51,4],["Бревна кедра",0.76,4],["Бревна кровавого дерева",1.14,4],["Бревна железного дерева",1.71,4],["Бревна белого дерева",2.56,4]]],["ROCK","raw",[["Травертин",0.51,3],["Гранит",0.76,3],["Лунный камень",1.14,3],["Базальт",1.71,3],["Мрамор",2.56,3]]],["ORE","raw",[["Железная руда",0.51,4],["Титановая руда",0.76,4],["Рунитовая руда",1.14,4],["Метеоритная руда",1.71,4],["Адамантиевая руда",2.56,4]]],["HIDE","raw",[["Средняя шкура",0.51,4],["Тяжелая шкура",0.76,4],["Прочная шкура",1.14,4],["Толстая шкура",1.71,4],["Надежная шкура",2.56,4]]],["FIBER","raw",[["Пенька",0.51,4],["Звездоцвет",0.76,4],["Хлопок-янтарник",1.14,4],["Златолен",1.71,4],["Призрачная пенька",2.56,4]]],["PLANKS","refined",[["Сосновые брусья",0.51,4],["Брусья из кедра",0.76,4],["Брусья из кровавого дерева",1.14,4],["Брусья из железного дерева",1.71,4],["Брусья из белого дерева",2.56,4]]],["STONEBLOCK","refined",[["Блок травертина",0.51,0],["Блок гранита",0.76,0],["Блок лунного камня",1.14,0],["Блок базальта",1.71,0],["Блок мрамора",2.56,0]]],["METALBAR","refined",[["Слиток стали",0.51,4],["Слиток титановой стали",0.76,4],["Слиток рунитовой стали",1.14,4],["Слиток метеоритной стали",1.71,4],["Слиток адамантиевой стали",2.56,4]]],["LEATHER","refined",[["Обработанная кожа",0.51,4],["Выделанная кожа",0.76,4],["Кожа демона",1.14,4],["Прочная кожа",1.71,4],["Долговечная кожа",2.56,4]]],["CLOTH","refined",[["Изысканная ткань",0.51,4],["Ткань с узором",0.76,4],["Дорогая ткань",1.14,4],["Роскошная ткань",1.71,4],["Великолепная ткань",2.56,4]]]],"rec":{"2H_BOW":[["PLANKS",32,1]],"2H_WARBOW":[["PLANKS",32,1]],"2H_LONGBOW":[["PLANKS",32,1]],"2H_LONGBOW_UNDEAD":[["PLANKS",32,1],["A:ARTEFACT_2H_LONGBOW_UNDEAD",1,0]],"2H_BOW_HELL":[["PLANKS",32,1],["A:ARTEFACT_2H_BOW_HELL",1,0]],"2H_BOW_KEEPER":[["PLANKS",32,1],["A:ARTEFACT_2H_BOW_KEEPER",1,0]],"2H_BOW_AVALON":[["PLANKS",32,1],["A:ARTEFACT_2H_BOW_AVALON",1,0]],"2H_BOW_CRYSTAL":[["PLANKS",32,1],["A:ARTEFACT_2H_BOW_CRYSTAL",1,0]],"2H_CROSSBOW":[["PLANKS",20,1],["METALBAR",12,1]],"2H_CROSSBOWLARGE":[["PLANKS",20,1],["METALBAR",12,1]],"MAIN_1HCROSSBOW":[["PLANKS",16,1],["METALBAR",8,1]],"2H_REPEATINGCROSSBOW_UNDEAD":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_REPEATINGCROSSBOW_UNDEAD",1,0]],"2H_DUALCROSSBOW_HELL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_DUALCROSSBOW_HELL",1,0]],"2H_CROSSBOWLARGE_MORGANA":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_CROSSBOWLARGE_MORGANA",1,0]],"2H_CROSSBOW_CANNON_AVALON":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_CROSSBOW_CANNON_AVALON",1,0]],"2H_DUALCROSSBOW_CRYSTAL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_DUALCROSSBOW_CRYSTAL",1,0]],"MAIN_CURSEDSTAFF":[["PLANKS",16,1],["METALBAR",8,1]],"2H_CURSEDSTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"2H_DEMONICSTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"MAIN_CURSEDSTAFF_UNDEAD":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_CURSEDSTAFF_UNDEAD",1,0]],"2H_SKULLORB_HELL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_SKULLORB_HELL",1,0]],"2H_CURSEDSTAFF_MORGANA":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_CURSEDSTAFF_MORGANA",1,0]],"MAIN_CURSEDSTAFF_AVALON":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_CURSEDSTAFF_AVALON",1,0]],"MAIN_CURSEDSTAFF_CRYSTAL":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_CURSEDSTAFF_CRYSTAL",1,0]],"MAIN_FIRESTAFF":[["PLANKS",16,1],["METALBAR",8,1]],"2H_FIRESTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"2H_INFERNOSTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"MAIN_FIRESTAFF_KEEPER":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_FIRESTAFF_KEEPER",1,0]],"2H_FIRESTAFF_HELL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_FIRESTAFF_HELL",1,0]],"2H_INFERNOSTAFF_MORGANA":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_INFERNOSTAFF_MORGANA",1,0]],"2H_FIRE_RINGPAIR_AVALON":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_FIRE_RINGPAIR_AVALON",1,0]],"MAIN_FIRESTAFF_CRYSTAL":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_FIRESTAFF_CRYSTAL",1,0]],"MAIN_FROSTSTAFF":[["PLANKS",16,1],["METALBAR",8,1]],"2H_FROSTSTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"2H_GLACIALSTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"MAIN_FROSTSTAFF_KEEPER":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_FROSTSTAFF_KEEPER",1,0]],"2H_ICEGAUNTLETS_HELL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_ICEGAUNTLETS_HELL",1,0]],"2H_ICECRYSTAL_UNDEAD":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_ICECRYSTAL_UNDEAD",1,0]],"MAIN_FROSTSTAFF_AVALON":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_FROSTSTAFF_AVALON",1,0]],"2H_FROSTSTAFF_CRYSTAL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_FROSTSTAFF_CRYSTAL",1,0]],"MAIN_ARCANESTAFF":[["PLANKS",16,1],["METALBAR",8,1]],"2H_ARCANESTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"2H_ENIGMATICSTAFF":[["PLANKS",20,1],["METALBAR",12,1]],"MAIN_ARCANESTAFF_UNDEAD":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_ARCANESTAFF_UNDEAD",1,0]],"2H_ARCANESTAFF_HELL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_ARCANESTAFF_HELL",1,0]],"2H_ENIGMATICORB_MORGANA":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_ENIGMATICORB_MORGANA",1,0]],"2H_ARCANE_RINGPAIR_AVALON":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_ARCANE_RINGPAIR_AVALON",1,0]],"2H_ARCANESTAFF_CRYSTAL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_ARCANESTAFF_CRYSTAL",1,0]],"MAIN_HOLYSTAFF":[["PLANKS",16,1],["CLOTH",8,1]],"2H_HOLYSTAFF":[["PLANKS",20,1],["CLOTH",12,1]],"2H_DIVINESTAFF":[["PLANKS",20,1],["CLOTH",12,1]],"MAIN_HOLYSTAFF_MORGANA":[["PLANKS",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_HOLYSTAFF_MORGANA",1,0]],"2H_HOLYSTAFF_HELL":[["PLANKS",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_HOLYSTAFF_HELL",1,0]],"2H_HOLYSTAFF_UNDEAD":[["PLANKS",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_HOLYSTAFF_UNDEAD",1,0]],"MAIN_HOLYSTAFF_AVALON":[["PLANKS",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_HOLYSTAFF_AVALON",1,0]],"2H_HOLYSTAFF_CRYSTAL":[["PLANKS",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_HOLYSTAFF_CRYSTAL",1,0]],"MAIN_NATURESTAFF":[["PLANKS",16,1],["CLOTH",8,1]],"2H_NATURESTAFF":[["PLANKS",20,1],["CLOTH",12,1]],"2H_WILDSTAFF":[["PLANKS",20,1],["CLOTH",12,1]],"MAIN_NATURESTAFF_KEEPER":[["PLANKS",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_NATURESTAFF_KEEPER",1,0]],"2H_NATURESTAFF_HELL":[["PLANKS",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_NATURESTAFF_HELL",1,0]],"2H_NATURESTAFF_KEEPER":[["PLANKS",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_NATURESTAFF_KEEPER",1,0]],"MAIN_NATURESTAFF_AVALON":[["PLANKS",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_NATURESTAFF_AVALON",1,0]],"MAIN_NATURESTAFF_CRYSTAL":[["PLANKS",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_NATURESTAFF_CRYSTAL",1,0]],"MAIN_DAGGER":[["METALBAR",12,1],["LEATHER",12,1]],"2H_DAGGERPAIR":[["METALBAR",16,1],["LEATHER",16,1]],"2H_CLAWPAIR":[["METALBAR",12,1],["LEATHER",20,1]],"MAIN_RAPIER_MORGANA":[["METALBAR",16,1],["LEATHER",8,1],["A:ARTEFACT_MAIN_RAPIER_MORGANA",1,0]],"MAIN_DAGGER_HELL":[["METALBAR",12,1],["LEATHER",12,1],["A:ARTEFACT_MAIN_DAGGER_HELL",1,0]],"2H_IRONGAUNTLETS_HELL":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_IRONGAUNTLETS_HELL",1,0]],"2H_DUALSICKLE_UNDEAD":[["METALBAR",16,1],["LEATHER",16,1],["A:ARTEFACT_2H_DUALSICKLE_UNDEAD",1,0]],"2H_DAGGER_KATAR_AVALON":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_DAGGER_KATAR_AVALON",1,0]],"2H_DAGGERPAIR_CRYSTAL":[["METALBAR",16,1],["LEATHER",16,1],["A:ARTEFACT_2H_DAGGERPAIR_CRYSTAL",1,0]],"MAIN_SPEAR":[["PLANKS",16,1],["METALBAR",8,1]],"2H_SPEAR":[["PLANKS",20,1],["METALBAR",12,1]],"2H_GLAIVE":[["PLANKS",12,1],["METALBAR",20,1]],"MAIN_SPEAR_KEEPER":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_SPEAR_KEEPER",1,0]],"2H_HARPOON_HELL":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_HARPOON_HELL",1,0]],"2H_TRIDENT_UNDEAD":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_TRIDENT_UNDEAD",1,0]],"MAIN_SPEAR_LANCE_AVALON":[["PLANKS",16,1],["METALBAR",8,1],["A:ARTEFACT_MAIN_SPEAR_LANCE_AVALON",1,0]],"2H_GLAIVE_CRYSTAL":[["PLANKS",12,1],["METALBAR",20,1],["A:ARTEFACT_2H_GLAIVE_CRYSTAL",1,0]],"MAIN_AXE":[["PLANKS",8,1],["METALBAR",16,1]],"2H_AXE":[["PLANKS",12,1],["METALBAR",20,1]],"2H_HALBERD":[["PLANKS",20,1],["METALBAR",12,1]],"2H_HALBERD_MORGANA":[["PLANKS",20,1],["METALBAR",12,1],["A:ARTEFACT_2H_HALBERD_MORGANA",1,0]],"2H_SCYTHE_HELL":[["PLANKS",12,1],["METALBAR",20,1],["A:ARTEFACT_2H_SCYTHE_HELL",1,0]],"2H_DUALAXE_KEEPER":[["PLANKS",12,1],["METALBAR",20,1],["A:ARTEFACT_2H_DUALAXE_KEEPER",1,0]],"2H_AXE_AVALON":[["PLANKS",12,1],["METALBAR",20,1],["A:ARTEFACT_2H_AXE_AVALON",1,0]],"2H_SCYTHE_CRYSTAL":[["PLANKS",12,1],["METALBAR",20,1],["A:ARTEFACT_2H_SCYTHE_CRYSTAL",1,0]],"MAIN_SWORD":[["METALBAR",16,1],["LEATHER",8,1]],"2H_CLAYMORE":[["METALBAR",20,1],["LEATHER",12,1]],"2H_DUALSWORD":[["METALBAR",20,1],["LEATHER",12,1]],"MAIN_SCIMITAR_MORGANA":[["METALBAR",16,1],["LEATHER",8,1],["A:ARTEFACT_MAIN_SCIMITAR_MORGANA",1,0]],"2H_CLEAVER_HELL":[["METALBAR",20,1],["LEATHER",12,1],["A:ARTEFACT_2H_CLEAVER_HELL",1,0]],"2H_DUALSCIMITAR_UNDEAD":[["METALBAR",20,1],["LEATHER",12,1],["A:ARTEFACT_2H_DUALSCIMITAR_UNDEAD",1,0]],"2H_CLAYMORE_AVALON":[["METALBAR",20,1],["LEATHER",12,1],["A:ARTEFACT_2H_CLAYMORE_AVALON",1,0]],"MAIN_SWORD_CRYSTAL":[["METALBAR",16,1],["LEATHER",8,1],["A:ARTEFACT_MAIN_SWORD_CRYSTAL",1,0]],"2H_QUARTERSTAFF":[["METALBAR",12,1],["LEATHER",20,1]],"2H_IRONCLADEDSTAFF":[["METALBAR",12,1],["LEATHER",20,1]],"2H_DOUBLEBLADEDSTAFF":[["METALBAR",12,1],["LEATHER",20,1]],"2H_COMBATSTAFF_MORGANA":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_COMBATSTAFF_MORGANA",1,0]],"2H_TWINSCYTHE_HELL":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_TWINSCYTHE_HELL",1,0]],"2H_ROCKSTAFF_KEEPER":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_ROCKSTAFF_KEEPER",1,0]],"2H_QUARTERSTAFF_AVALON":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_QUARTERSTAFF_AVALON",1,0]],"2H_DOUBLEBLADEDSTAFF_CRYSTAL":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_DOUBLEBLADEDSTAFF_CRYSTAL",1,0]],"MAIN_HAMMER":[["METALBAR",24,1]],"2H_POLEHAMMER":[["METALBAR",20,1],["CLOTH",12,1]],"2H_HAMMER":[["METALBAR",20,1],["CLOTH",12,1]],"2H_HAMMER_UNDEAD":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_HAMMER_UNDEAD",1,0]],"2H_DUALHAMMER_HELL":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_DUALHAMMER_HELL",1,0]],"2H_RAM_KEEPER":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_RAM_KEEPER",1,0]],"2H_HAMMER_AVALON":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_HAMMER_AVALON",1,0]],"2H_HAMMER_CRYSTAL":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_HAMMER_CRYSTAL",1,0]],"MAIN_MACE":[["METALBAR",16,1],["CLOTH",8,1]],"2H_MACE":[["METALBAR",20,1],["CLOTH",12,1]],"2H_FLAIL":[["METALBAR",20,1],["CLOTH",12,1]],"MAIN_ROCKMACE_KEEPER":[["METALBAR",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_ROCKMACE_KEEPER",1,0]],"MAIN_MACE_HELL":[["METALBAR",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_MACE_HELL",1,0]],"2H_MACE_MORGANA":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_MACE_MORGANA",1,0]],"2H_DUALMACE_AVALON":[["METALBAR",20,1],["CLOTH",12,1],["A:ARTEFACT_2H_DUALMACE_AVALON",1,0]],"MAIN_MACE_CRYSTAL":[["METALBAR",16,1],["CLOTH",8,1],["A:ARTEFACT_MAIN_MACE_CRYSTAL",1,0]],"2H_KNUCKLES_SET1":[["METALBAR",12,1],["LEATHER",20,1]],"2H_KNUCKLES_SET2":[["METALBAR",12,1],["LEATHER",20,1]],"2H_KNUCKLES_SET3":[["METALBAR",12,1],["LEATHER",20,1]],"2H_KNUCKLES_KEEPER":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_KNUCKLES_KEEPER",1,0]],"2H_KNUCKLES_HELL":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_KNUCKLES_HELL",1,0]],"2H_KNUCKLES_MORGANA":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_KNUCKLES_MORGANA",1,0]],"2H_KNUCKLES_AVALON":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_KNUCKLES_AVALON",1,0]],"2H_KNUCKLES_CRYSTAL":[["METALBAR",12,1],["LEATHER",20,1],["A:ARTEFACT_2H_KNUCKLES_CRYSTAL",1,0]],"2H_SHAPESHIFTER_CRYSTAL":[["PLANKS",20,1],["LEATHER",12,1],["A:ARTEFACT_2H_SHAPESHIFTER_CRYSTAL",1,0]],"OFF_SHIELD":[["PLANKS",4,1],["METALBAR",4,1]],"OFF_TOWERSHIELD_UNDEAD":[["PLANKS",4,1],["METALBAR",4,1],["A:ARTEFACT_OFF_TOWERSHIELD_UNDEAD",1,0]],"OFF_SHIELD_HELL":[["PLANKS",4,1],["METALBAR",4,1],["A:ARTEFACT_OFF_SHIELD_HELL",1,0]],"OFF_SPIKEDSHIELD_MORGANA":[["PLANKS",4,1],["METALBAR",4,1],["A:ARTEFACT_OFF_SPIKEDSHIELD_MORGANA",1,0]],"OFF_SHIELD_AVALON":[["PLANKS",4,1],["METALBAR",4,1],["A:ARTEFACT_OFF_SHIELD_AVALON",1,0]],"OFF_SHIELD_CRYSTAL":[["PLANKS",4,1],["METALBAR",4,1],["A:ARTEFACT_OFF_SHIELD_CRYSTAL",1,0]],"OFF_BOOK":[["CLOTH",4,1],["LEATHER",4,1]],"OFF_ORB_MORGANA":[["CLOTH",4,1],["LEATHER",4,1],["A:ARTEFACT_OFF_ORB_MORGANA",1,0]],"OFF_DEMONSKULL_HELL":[["CLOTH",4,1],["LEATHER",4,1],["A:ARTEFACT_OFF_DEMONSKULL_HELL",1,0]],"OFF_TOTEM_KEEPER":[["CLOTH",4,1],["LEATHER",4,1],["A:ARTEFACT_OFF_TOTEM_KEEPER",1,0]],"OFF_CENSER_AVALON":[["CLOTH",4,1],["LEATHER",4,1],["A:ARTEFACT_OFF_CENSER_AVALON",1,0]],"OFF_TOME_CRYSTAL":[["CLOTH",4,1],["LEATHER",4,1],["A:ARTEFACT_OFF_TOME_CRYSTAL",1,0]],"OFF_TORCH":[["PLANKS",4,1],["CLOTH",4,1]],"OFF_HORN_KEEPER":[["PLANKS",4,1],["CLOTH",4,1],["A:ARTEFACT_OFF_HORN_KEEPER",1,0]],"OFF_TALISMAN_AVALON":[["PLANKS",4,1],["CLOTH",4,1],["A:ARTEFACT_OFF_TALISMAN_AVALON",1,0]],"OFF_LAMP_UNDEAD":[["PLANKS",4,1],["CLOTH",4,1],["A:ARTEFACT_OFF_LAMP_UNDEAD",1,0]],"OFF_JESTERCANE_HELL":[["PLANKS",4,1],["CLOTH",4,1],["A:ARTEFACT_OFF_JESTERCANE_HELL",1,0]],"OFF_TORCH_CRYSTAL":[["PLANKS",4,1],["CLOTH",4,1],["A:ARTEFACT_OFF_TORCH_CRYSTAL",1,0]],"CAPE":[["CLOTH",4,1],["LEATHER",4,1]],"BAG":[["CLOTH",8,1],["LEATHER",8,1]],"HEAD_PLATE_SET1":[["METALBAR",8,1]],"ARMOR_PLATE_SET1":[["METALBAR",16,1]],"SHOES_PLATE_SET1":[["METALBAR",8,1]],"HEAD_PLATE_SET2":[["METALBAR",8,1]],"ARMOR_PLATE_SET2":[["METALBAR",16,1]],"SHOES_PLATE_SET2":[["METALBAR",8,1]],"HEAD_PLATE_SET3":[["METALBAR",8,1]],"ARMOR_PLATE_SET3":[["METALBAR",16,1]],"SHOES_PLATE_SET3":[["METALBAR",8,1]],"HEAD_PLATE_UNDEAD":[["METALBAR",8,1],["A:ARTEFACT_HEAD_PLATE_UNDEAD",1,0]],"ARMOR_PLATE_UNDEAD":[["METALBAR",16,1],["A:ARTEFACT_ARMOR_PLATE_UNDEAD",1,0]],"SHOES_PLATE_UNDEAD":[["METALBAR",8,1],["A:ARTEFACT_SHOES_PLATE_UNDEAD",1,0]],"HEAD_PLATE_HELL":[["METALBAR",8,1],["A:ARTEFACT_HEAD_PLATE_HELL",1,0]],"ARMOR_PLATE_HELL":[["METALBAR",16,1],["A:ARTEFACT_ARMOR_PLATE_HELL",1,0]],"SHOES_PLATE_HELL":[["METALBAR",8,1],["A:ARTEFACT_SHOES_PLATE_HELL",1,0]],"HEAD_PLATE_KEEPER":[["METALBAR",8,1],["A:ARTEFACT_HEAD_PLATE_KEEPER",1,0]],"ARMOR_PLATE_KEEPER":[["METALBAR",16,1],["A:ARTEFACT_ARMOR_PLATE_KEEPER",1,0]],"SHOES_PLATE_KEEPER":[["METALBAR",8,1],["A:ARTEFACT_SHOES_PLATE_KEEPER",1,0]],"HEAD_PLATE_FEY":[["METALBAR",8,1],["A:ARTEFACT_HEAD_PLATE_FEY",1,0]],"ARMOR_PLATE_FEY":[["METALBAR",16,1],["A:ARTEFACT_ARMOR_PLATE_FEY",1,0]],"SHOES_PLATE_FEY":[["METALBAR",8,1],["A:ARTEFACT_SHOES_PLATE_FEY",1,0]],"HEAD_PLATE_AVALON":[["METALBAR",8,1],["A:ARTEFACT_HEAD_PLATE_AVALON",1,0]],"ARMOR_PLATE_AVALON":[["METALBAR",16,1],["A:ARTEFACT_ARMOR_PLATE_AVALON",1,0]],"SHOES_PLATE_AVALON":[["METALBAR",8,1],["A:ARTEFACT_SHOES_PLATE_AVALON",1,0]],"HEAD_LEATHER_SET1":[["LEATHER",8,1]],"ARMOR_LEATHER_SET1":[["LEATHER",16,1]],"SHOES_LEATHER_SET1":[["LEATHER",8,1]],"HEAD_LEATHER_SET2":[["LEATHER",8,1]],"ARMOR_LEATHER_SET2":[["LEATHER",16,1]],"SHOES_LEATHER_SET2":[["LEATHER",8,1]],"HEAD_LEATHER_SET3":[["LEATHER",8,1]],"ARMOR_LEATHER_SET3":[["LEATHER",16,1]],"SHOES_LEATHER_SET3":[["LEATHER",8,1]],"HEAD_LEATHER_MORGANA":[["LEATHER",8,1],["A:ARTEFACT_HEAD_LEATHER_MORGANA",1,0]],"ARMOR_LEATHER_MORGANA":[["LEATHER",16,1],["A:ARTEFACT_ARMOR_LEATHER_MORGANA",1,0]],"SHOES_LEATHER_MORGANA":[["LEATHER",8,1],["A:ARTEFACT_SHOES_LEATHER_MORGANA",1,0]],"HEAD_LEATHER_HELL":[["LEATHER",8,1],["A:ARTEFACT_HEAD_LEATHER_HELL",1,0]],"ARMOR_LEATHER_HELL":[["LEATHER",16,1],["A:ARTEFACT_ARMOR_LEATHER_HELL",1,0]],"SHOES_LEATHER_HELL":[["LEATHER",8,1],["A:ARTEFACT_SHOES_LEATHER_HELL",1,0]],"HEAD_LEATHER_UNDEAD":[["LEATHER",8,1],["A:ARTEFACT_HEAD_LEATHER_UNDEAD",1,0]],"ARMOR_LEATHER_UNDEAD":[["LEATHER",16,1],["A:ARTEFACT_ARMOR_LEATHER_UNDEAD",1,0]],"SHOES_LEATHER_UNDEAD":[["LEATHER",8,1],["A:ARTEFACT_SHOES_LEATHER_UNDEAD",1,0]],"HEAD_LEATHER_FEY":[["LEATHER",8,1],["A:ARTEFACT_HEAD_LEATHER_FEY",1,0]],"ARMOR_LEATHER_FEY":[["LEATHER",16,1],["A:ARTEFACT_ARMOR_LEATHER_FEY",1,0]],"SHOES_LEATHER_FEY":[["LEATHER",8,1],["A:ARTEFACT_SHOES_LEATHER_FEY",1,0]],"HEAD_LEATHER_AVALON":[["LEATHER",8,1],["A:ARTEFACT_HEAD_LEATHER_AVALON",1,0]],"ARMOR_LEATHER_AVALON":[["LEATHER",16,1],["A:ARTEFACT_ARMOR_LEATHER_AVALON",1,0]],"SHOES_LEATHER_AVALON":[["LEATHER",8,1],["A:ARTEFACT_SHOES_LEATHER_AVALON",1,0]],"HEAD_LEATHER_DRAGON":[["LEATHER",8,1],["A:ARTEFACT_HEAD_LEATHER_DRAGON",1,0]],"ARMOR_LEATHER_DRAGON":[["LEATHER",16,1],["A:ARTEFACT_ARMOR_LEATHER_DRAGON",1,0]],"SHOES_LEATHER_DRAGON":[["LEATHER",8,1],["A:ARTEFACT_SHOES_LEATHER_DRAGON",1,0]],"HEAD_CLOTH_SET1":[["CLOTH",8,1]],"ARMOR_CLOTH_SET1":[["CLOTH",16,1]],"SHOES_CLOTH_SET1":[["CLOTH",8,1]],"HEAD_CLOTH_SET2":[["CLOTH",8,1]],"ARMOR_CLOTH_SET2":[["CLOTH",16,1]],"SHOES_CLOTH_SET2":[["CLOTH",8,1]],"HEAD_CLOTH_SET3":[["CLOTH",8,1]],"ARMOR_CLOTH_SET3":[["CLOTH",16,1]],"SHOES_CLOTH_SET3":[["CLOTH",8,1]],"HEAD_CLOTH_KEEPER":[["CLOTH",8,1],["A:ARTEFACT_HEAD_CLOTH_KEEPER",1,0]],"ARMOR_CLOTH_KEEPER":[["CLOTH",16,1],["A:ARTEFACT_ARMOR_CLOTH_KEEPER",1,0]],"SHOES_CLOTH_KEEPER":[["CLOTH",8,1],["A:ARTEFACT_SHOES_CLOTH_KEEPER",1,0]],"HEAD_CLOTH_HELL":[["CLOTH",8,1],["A:ARTEFACT_HEAD_CLOTH_HELL",1,0]],"ARMOR_CLOTH_HELL":[["CLOTH",16,1],["A:ARTEFACT_ARMOR_CLOTH_HELL",1,0]],"SHOES_CLOTH_HELL":[["CLOTH",8,1],["A:ARTEFACT_SHOES_CLOTH_HELL",1,0]],"HEAD_CLOTH_MORGANA":[["CLOTH",8,1],["A:ARTEFACT_HEAD_CLOTH_MORGANA",1,0]],"ARMOR_CLOTH_MORGANA":[["CLOTH",16,1],["A:ARTEFACT_ARMOR_CLOTH_MORGANA",1,0]],"SHOES_CLOTH_MORGANA":[["CLOTH",8,1],["A:ARTEFACT_SHOES_CLOTH_MORGANA",1,0]],"HEAD_CLOTH_FEY":[["CLOTH",8,1],["A:ARTEFACT_HEAD_CLOTH_FEY",1,0]],"ARMOR_CLOTH_FEY":[["CLOTH",16,1],["A:ARTEFACT_ARMOR_CLOTH_FEY",1,0]],"SHOES_CLOTH_FEY":[["CLOTH",8,1],["A:ARTEFACT_SHOES_CLOTH_FEY",1,0]],"HEAD_CLOTH_AVALON":[["CLOTH",8,1],["A:ARTEFACT_HEAD_CLOTH_AVALON",1,0]],"ARMOR_CLOTH_AVALON":[["CLOTH",16,1],["A:ARTEFACT_ARMOR_CLOTH_AVALON",1,0]],"SHOES_CLOTH_AVALON":[["CLOTH",8,1],["A:ARTEFACT_SHOES_CLOTH_AVALON",1,0]]}};
+
+const QN = ['', 'Обычное', 'Хорошее', 'Выдающееся', 'Отличное', 'Шедевр'];
+const CATS = [
+  { id: 'melee', name: 'Ближний бой' }, { id: 'ranged', name: 'Дальний бой' }, { id: 'magic', name: 'Магия' },
+  { id: 'plate', name: 'Латы' }, { id: 'leather', name: 'Кожа' }, { id: 'cloth', name: 'Ткань' },
+  { id: 'offhand', name: 'Левая рука' }, { id: 'cape', name: 'Плащи' }, { id: 'bag', name: 'Сумки' },
+  { id: 'raw', name: 'Сырьё' }, { id: 'refined', name: 'Материалы' }
+];
+const CITIES = [
+  { id: 'Bridgewatch', name: 'Бриджвотч' }, { id: 'Fort Sterling', name: 'Форт Стерлинг' },
+  { id: 'Lymhurst', name: 'Лимхерст' }, { id: 'Martlock', name: 'Мартлок' }, { id: 'Thetford', name: 'Тетфорд' },
+  { id: 'Caerleon', name: 'Каэрлеон' }, { id: 'Brecilien', name: 'Бресилиен' },
+  { id: 'Black Market', name: 'Чёрный рынок', sellOnly: true }
+];
+const SERVERS = [
+  { id: 'europe', name: 'Европа' }, { id: 'west', name: 'Америка' }, { id: 'east', name: 'Азия' }
+];
+const cityName = id => (CITIES.find(c => c.id === id) || { name: id }).name;
+const apiHost = server => `https://${server}.albion-online-data.com`;
+
+/* Список предметов под выбранные категории, тиры и зачарования */
+function buildItems(sel) {
+  const out = [];
+  const cats = new Set(sel.cats), tiers = [...sel.tiers].sort(), enchs = [...sel.enchs].sort();
+  for (const g of DB.gear) {
+    if (!cats.has(g[2])) continue;
+    const maxE = g.length > 4 ? g[4] : 4;
+    for (const t of tiers) for (const e of enchs) {
+      if (e > maxE) continue;
+      out.push({ id: `T${t}_${g[0]}` + (e ? `@${e}` : ''), name: g[1], tier: t, ench: e, cat: g[2], w: g[3][t - 4], gear: true });
+    }
+  }
+  for (const r of DB.res) {
+    if (!cats.has(r[1])) continue;
+    for (const t of tiers) {
+      const row = r[2][t - 4]; if (!row) continue;
+      for (const e of enchs) {
+        if (e > row[2]) continue;
+        out.push({ id: e ? `T${t}_${r[0]}_LEVEL${e}@${e}` : `T${t}_${r[0]}`, name: row[0], tier: t, ench: e, cat: r[1], w: row[1], gear: false });
+      }
+    }
+  }
+  return out;
+}
+
+/* Режем список ID на запросы: у API предел длины адреса 4096 символов */
+function chunkIds(ids, maxChars) {
+  const chunks = []; let cur = [], len = 0;
+  for (const id of ids) {
+    if (len + id.length + 1 > maxChars && cur.length) { chunks.push(cur); cur = []; len = 0; }
+    cur.push(id); len += id.length + 1;
+  }
+  if (cur.length) chunks.push(cur);
+  return chunks;
+}
+
+function indexPrices(rows, map) {
+  for (const r of rows) {
+    const a = map[r.item_id] || (map[r.item_id] = {});
+    const b = a[r.city] || (a[r.city] = {});
+    b[r.quality || 1] = r;
+  }
+  return map;
+}
+
+/* История: средний дневной объём и средняя цена сделок за последние 7 дней */
+function indexHistory(rows, map, now) {
+  const from = now - 8 * 864e5;
+  for (const r of rows) {
+    let cnt = 0, sum = 0, days = 0;
+    for (const p of (r.data || [])) {
+      const ts = Date.parse(p.timestamp + 'Z');
+      if (!(ts >= from) || !p.item_count) continue;
+      cnt += p.item_count; sum += p.avg_price * p.item_count; days++;
+    }
+    if (days) map[r.item_id + '|' + (r.quality || 1)] = { vol: cnt / Math.max(days, 1), avg: sum / cnt };
+  }
+  return map;
+}
+
+const ageH = (d, now) => (!d || d.startsWith('0001')) ? Infinity : Math.max(0, (now - Date.parse(d + 'Z')) / 36e5);
+
+function feeRate(cfg) {
+  return (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100 + (cfg.mode === 'order' ? cfg.setupFee / 100 : 0);
+}
+
+/* Кандидаты: одна лучшая сделка на каждую пару «предмет + качество покупки» */
+function computeCandidates(items, prices, cfg, now) {
+  const fee = feeRate(cfg), best = new Map();
+  for (const it of items) {
+    const p = prices[it.id]; if (!p) continue;
+    const S = p[cfg.src], D = p[cfg.dst]; if (!S || !D) continue;
+    const quals = it.gear ? [1, 2, 3, 4, 5] : [1];
+    for (const qs of quals) {
+      const d = D[qs]; if (!d) continue;
+      let sell, sellDate;
+      if (cfg.mode === 'order') { sell = d.sell_price_min > 1 ? d.sell_price_min - 1 : 0; sellDate = d.sell_price_min_date; }
+      else { sell = d.buy_price_max; sellDate = d.buy_price_max_date; }
+      if (!(sell > 0)) continue;
+      const aS = ageH(sellDate, now); if (aS > cfg.maxAge) continue;
+      /* В ордер на покупку можно сдать вещь качества не ниже указанного; свой ордер сравниваем с тем же качеством */
+      const qbList = (it.gear && cfg.mode !== 'order') ? quals.filter(q => q >= qs) : [qs];
+      for (const qb of qbList) {
+        const s = S[qb]; if (!s || !(s.sell_price_min > 0)) continue;
+        const aB = ageH(s.sell_price_min_date, now); if (aB > cfg.maxAge) continue;
+        const buy = s.sell_price_min, net = sell * (1 - fee), profit = net - buy, roi = profit / buy;
+        if (profit <= 0 || roi * 100 < cfg.minRoi || roi * 100 > cfg.maxRoi) continue;
+        const conf = Math.pow(0.5, (aB + aS) / cfg.halfLife);
+        const c = { key: it.id + '|' + qb, id: it.id, item: it, qb, qs, buy, sell, net, profit, roi, ageB: aB, ageS: aS, conf, vol: null, avg: null };
+        const prev = best.get(c.key);
+        if (!prev || prev.profit * prev.conf < c.profit * c.conf) best.set(c.key, c);
+      }
+    }
+  }
+  return [...best.values()].sort((a, b) => b.profit * b.conf - a.profit * a.conf);
+}
+
+function applyHistory(cands, hist) {
+  for (const c of cands) {
+    const h = hist[c.id + '|' + c.qs];
+    if (h) { c.vol = h.vol; c.avg = h.avg; }
+  }
+}
+
+/* Сколько штук разумно брать и шаг (для стаков шаг больше одной штуки) */
+function capFor(c, cfg) {
+  let cap;
+  if (c.item.gear) cap = c.vol != null ? Math.floor(c.vol * cfg.share / 100) : 1, cap = Math.min(Math.max(cap, 1), cfg.maxPerPos);
+  else cap = c.vol != null ? Math.floor(c.vol * cfg.share / 100) : 50, cap = Math.min(Math.max(cap, 1), 9999);
+  const steps = Math.min(cap, 20), lot = Math.floor(cap / steps);
+  return { cap: steps * lot, steps, lot };
+}
+
+/* Деньги позиции при количестве qty: каждая следующая ступень дороже в закупке и дешевле в продаже */
+function posMoney(c, qty, lot, cfg, actualBuy) {
+  const s = cfg.slip / 100, fee = feeRate(cfg);
+  let cost = 0, net = 0, left = qty, k = 0;
+  while (left > 0) {
+    const n = Math.min(lot, left);
+    cost += c.buy * Math.pow(1 + s, k) * n;
+    net += c.sell * Math.pow(1 - s, k) * (1 - fee) * n;
+    left -= n; k++;
+  }
+  if (actualBuy > 0) cost = actualBuy * qty;
+  return { cost, net, profit: net - cost, weight: c.item.w * qty };
+}
+
+function buildUnits(c, cfg) {
+  const { steps, lot } = capFor(c, cfg), s = cfg.slip / 100, fee = feeRate(cfg), units = [];
+  for (let k = 0; k < steps; k++) {
+    const b = c.buy * Math.pow(1 + s, k), net = c.sell * Math.pow(1 - s, k) * (1 - fee), pu = net - b;
+    if (pu <= 0 || pu / b * 100 < cfg.minRoi) break;
+    units.push({ c: b * lot, w: c.item.w * lot, p: pu * lot, e: pu * lot * c.conf });
+  }
+  return { units, lot };
+}
+
+/* Рюкзак с двумя ограничениями (серебро и вес): жадный выбор по нескольким весам критериев, берём лучший */
+function optimize(pos, B, W) {
+  const n = pos.length; let best = null;
+  const alphas = (W === Infinity) ? [1] : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+  for (const a of alphas) {
+    const take = new Array(n).fill(0), open = new Array(n).fill(true);
+    let b = B, w = W, tot = 0;
+    for (;;) {
+      let bi = -1, bs = 0;
+      for (let i = 0; i < n; i++) {
+        if (!open[i]) continue;
+        const u = pos[i].units[take[i]];
+        if (!u || u.c > b || u.w > w) { open[i] = false; continue; }
+        const denom = a * (u.c / B) + (W === Infinity ? 0 : (1 - a) * (u.w / W)) + 1e-12;
+        const sc = u.e / denom;
+        if (sc > bs) { bs = sc; bi = i; }
+      }
+      if (bi < 0) break;
+      const u = pos[bi].units[take[bi]];
+      take[bi]++; b -= u.c; w -= u.w; tot += u.e;
+    }
+    if (!best || tot > best.tot) best = { take, tot };
+  }
+  return best || { take: [], tot: 0 };
+}
+
+/* Сборка плана. locked — уже купленные позиции (их серебро и вес вычитаем), excluded — вычеркнутые */
+function makePlan(cands, cfg, locked, excluded) {
+  locked = locked || new Map(); excluded = excluded || new Set();
+  const W0 = cfg.weight > 0 ? cfg.weight : Infinity;
+  let B = cfg.budget, W = W0;
+  const rows = [];
+  for (const [key, L] of locked) {
+    const { lot } = capFor(L.cand, cfg);
+    const m = posMoney(L.cand, L.qty, lot, cfg, L.actualBuy);
+    rows.push({ key, cand: L.cand, qty: L.qty, lot, locked: true, actualBuy: L.actualBuy || 0, ...m, exp: m.profit * (L.actualBuy > 0 ? Math.pow(0.5, L.cand.ageS / cfg.halfLife) : L.cand.conf) });
+    B -= m.cost; W -= m.weight;
+  }
+  B = Math.max(0, B); W = Math.max(0, W);
+  let free = cands.filter(c => !locked.has(c.key) && !excluded.has(c.key));
+  let picked = [];
+  for (let round = 0; round < 4; round++) {
+    const pos = free.map(c => ({ c, ...buildUnits(c, cfg) })).filter(p => p.units.length);
+    const { take } = optimize(pos, B, W);
+    picked = [];
+    pos.forEach((p, i) => { if (take[i] > 0) picked.push({ p, steps: take[i] }); });
+    const small = picked.filter(x => x.p.units.slice(0, x.steps).reduce((s, u) => s + u.p, 0) < cfg.minPosProfit);
+    if (!small.length) break;
+    const drop = new Set(small.map(x => x.p.c.key));
+    free = free.filter(c => !drop.has(c.key));
+  }
+  for (const x of picked) {
+    const c = x.p.c, qty = x.steps * x.p.lot, m = posMoney(c, qty, x.p.lot, cfg, 0);
+    if (m.profit < cfg.minPosProfit) continue;
+    rows.push({ key: c.key, cand: c, qty, lot: x.p.lot, locked: false, actualBuy: 0, ...m, exp: m.profit * c.conf });
+  }
+  rows.sort((a, b) => (b.locked - a.locked) || (b.exp - a.exp));
+  const t = { cost: 0, net: 0, profit: 0, exp: 0, weight: 0 };
+  for (const r of rows) { t.cost += r.cost; t.net += r.net; t.profit += r.profit; t.exp += r.exp; t.weight += r.weight; }
+  const inPlan = new Set(rows.map(r => r.key));
+  const leftB = cfg.budget - t.cost, leftW = W0 - t.weight;
+  const leftovers = [];
+  for (const c of cands) {
+    if (inPlan.has(c.key) || excluded.has(c.key)) continue;
+    const { lot } = capFor(c, cfg);
+    const cost = c.buy * lot, w = c.item.w * lot;
+    const reason = (cost > leftB && w > leftW) ? 'не хватило серебра и веса' : cost > leftB ? 'не хватило серебра' : w > leftW ? 'не хватило веса' : 'прибыль с позиции слишком мала';
+    leftovers.push({ cand: c, reason });
+    if (leftovers.length >= 25) break;
+  }
+  return { rows, totals: t, leftovers, budget: cfg.budget, weightCap: W0 };
+}
+
+/* Риск дороги: p — вероятность потерять весь груз за рейс */
+function riskMath(totals, pPct, minutes) {
+  const p = pPct / 100, P = totals.exp, C = totals.cost;
+  return {
+    ev: (1 - p) * P - p * C,
+    breakEven: (P + C) > 0 ? P / (P + C) * 100 : 0,
+    runsPerGank: P > 0 ? C / P : Infinity,
+    perHour: minutes > 0 ? ((1 - p) * P - p * C) / minutes * 60 : null
+  };
+}
+
+/* Демо-данные: выдуманные цены, чтобы посмотреть интерфейс без сети */
+function demoData(items, cfg, now) {
+  const rows = [], hist = [];
+  const h = s => { let x = 2166136261; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); } return (x >>> 0) / 4294967296; };
+  const iso = ms => new Date(ms).toISOString().slice(0, 19);
+  for (const it of items) {
+    const catF = it.gear ? ({ bag: 1.6, cape: 0.8, offhand: 0.7 }[it.cat] || 1.2) : 0.012;
+    const v = 9000 * Math.pow(2.05, it.tier - 4) * Math.pow(2.6, it.ench) * catF * (0.7 + 0.6 * h(it.id + 'v'));
+    for (const q of (it.gear ? [1, 2, 3, 4, 5] : [1])) {
+      const k = it.id + q, qf = 1 + (q - 1) * 0.04;
+      if (h(k + 'm') < 0.35) continue;
+      const src = Math.round(v * qf * (0.86 + 0.2 * h(k + 's')));
+      const dstBuy = Math.round(v * qf * (0.8 + 0.42 * h(k + 'd')));
+      const aB = now - (0.3 + 20 * Math.pow(h(k + 'ab'), 1.5)) * 36e5, aS = now - (0.2 + 9 * Math.pow(h(k + 'as'), 1.5)) * 36e5;
+      rows.push({ item_id: it.id, city: cfg.src, quality: q, sell_price_min: src, sell_price_min_date: iso(aB), buy_price_max: Math.round(src * 0.8), buy_price_max_date: iso(aB) });
+      rows.push({ item_id: it.id, city: cfg.dst, quality: q, sell_price_min: Math.round(dstBuy * 1.12), sell_price_min_date: iso(aS), buy_price_max: dstBuy, buy_price_max_date: iso(aS) });
+      const vol = Math.round((it.gear ? 4 + 260 * h(k + 'vol') : 2000 + 60000 * h(k + 'vol')) / Math.pow(1.6, it.ench));
+      hist.push({ item_id: it.id, location: cfg.dst, quality: q, data: [1, 2, 3, 4, 5, 6, 7].map(dd => ({ item_count: Math.max(1, vol), avg_price: dstBuy, timestamp: iso(now - dd * 864e5) })) });
+    }
+  }
+  return { rows, hist };
+}
+
+/* Форматирование и разбор чисел */
+const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ');
+function fmtShort(n) {
+  const a = Math.abs(n), s = n < 0 ? '−' : '';
+  if (a >= 1e9) return s + (a / 1e9).toFixed(2).replace('.', ',') + ' млрд';
+  if (a >= 1e6) return s + (a / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace('.', ',') + ' млн';
+  if (a >= 1e4) return s + Math.round(a / 1e3) + ' тыс.';
+  return s + fmt(a);
+}
+function parseSilver(str) {
+  if (typeof str === 'number') return str;
+  let s = String(str || '').toLowerCase().replace(/[\s  _]/g, '').replace(',', '.');
+  let mul = 1;
+  if (/(млрд|b|kkk)$/.test(s)) mul = 1e9; else if (/(млн|m|м|kk|кк)$/.test(s)) mul = 1e6; else if (/(тыс|k|к)$/.test(s)) mul = 1e3;
+  s = s.replace(/[^0-9.]/g, '');
+  const v = parseFloat(s);
+  return isFinite(v) ? Math.round(v * mul) : 0;
+}
+function fmtAge(h) {
+  if (!isFinite(h)) return '—';
+  if (h < 1) return Math.max(1, Math.round(h * 60)) + ' мин';
+  if (h < 48) return Math.round(h) + ' ч';
+  return Math.round(h / 24) + ' дн';
+}
+const tierLabel = it => it.tier + '.' + it.ench;
+
+if (typeof module !== 'undefined') module.exports = { DB, QN, CATS, CITIES, SERVERS, cityName, apiHost, buildItems, chunkIds, indexPrices, indexHistory, ageH, feeRate, computeCandidates, applyHistory, capFor, posMoney, buildUnits, optimize, makePlan, riskMath, demoData, fmt, fmtShort, parseSilver, fmtAge, tierLabel };
+
+</script>
+<script>
+"use strict";
+/* ===== Караван: интерфейс ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+};
+
+const DEF = {
+  server: 'europe', src: 'Lymhurst', dst: 'Black Market', budget: 2000000, weight: 0, premium: true, mode: 'instant',
+  cats: ['melee', 'ranged', 'magic', 'plate', 'leather', 'cloth', 'offhand', 'cape', 'bag'], tiers: [5, 6, 7], enchs: [0, 1, 2],
+  maxAge: 24, halfLife: 8, minRoi: 5, maxRoi: 150, minPosProfit: 3000, share: 10, slip: 2, maxPerPos: 5,
+  taxPremium: 4, taxFree: 8, setupFee: 2.5, gank: 10, minutes: 15
+};
+const ADV = ['maxAge', 'halfLife', 'minRoi', 'maxRoi', 'minPosProfit', 'maxPerPos', 'share', 'slip', 'taxPremium', 'taxFree', 'setupFee'];
+let cfg = Object.assign({}, DEF, LS.get('karavan.cfg', {}));
+for (const k of ['cats', 'tiers', 'enchs']) if (!Array.isArray(cfg[k]) || !cfg[k].length) cfg[k] = DEF[k].slice();
+if (!CITIES.some(c => c.id === cfg.src && !c.sellOnly)) cfg.src = DEF.src;
+if (!CITIES.some(c => c.id === cfg.dst)) cfg.dst = DEF.dst;
+if (!SERVERS.some(s => s.id === cfg.server)) cfg.server = DEF.server;
+
+const S = { scan: null, cands: [], plan: null, locked: new Map(), excluded: new Set(), busy: false, open: null, error: null, histFail: false };
+const saveCfg = () => LS.set('karavan.cfg', cfg);
+const scanKey = () => JSON.stringify([cfg.server, cfg.src, cfg.dst, [...cfg.cats].sort(), [...cfg.tiers].sort(), [...cfg.enchs].sort()]);
+const routeKey = () => cfg.server + '|' + cfg.src + '|' + cfg.dst;
+const sameCity = () => cfg.src === 'Caerleon' && cfg.dst === 'Black Market';
+
+function routeDefaults() {
+  if (sameCity()) return { gank: 0, minutes: 3 };
+  const risky = ['Caerleon', 'Black Market', 'Brecilien'];
+  if (risky.includes(cfg.src) || risky.includes(cfg.dst)) return { gank: 10, minutes: 15 };
+  return { gank: 1, minutes: 20 };
+}
+
+/* ---------- форма ---------- */
+function chipRow(el, list, key, label) {
+  el.innerHTML = list.map(v => `<button type="button" class="chip" data-v="${esc(v.id)}" aria-pressed="${cfg[key].includes(v.id)}">${esc(label(v))}</button>`).join('');
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const raw = b.dataset.v, v = (key === 'cats') ? raw : Number(raw);
+    const i = cfg[key].indexOf(v);
+    if (i >= 0) { if (cfg[key].length === 1) { toast('Нужен хотя бы один вариант'); return; } cfg[key].splice(i, 1); } else cfg[key].push(v);
+    b.setAttribute('aria-pressed', String(i < 0));
+    saveCfg(); updateGo(); if (S.scan) renderResult();
+  });
+}
+function initForm() {
+  $('#server').innerHTML = SERVERS.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  $('#src').innerHTML = CITIES.filter(c => !c.sellOnly).map(c => `<option value="${esc(c.id)}">${c.name}</option>`).join('');
+  $('#dst').innerHTML = CITIES.map(c => `<option value="${esc(c.id)}">${c.name}</option>`).join('');
+  $('#server').value = cfg.server; $('#src').value = cfg.src; $('#dst').value = cfg.dst;
+  $('#budget').value = cfg.budget ? fmt(cfg.budget) : '';
+  $('#weight').value = cfg.weight || '';
+  $('#premium').checked = !!cfg.premium;
+  setMode(cfg.mode);
+  chipRow($('#cats'), CATS, 'cats', v => v.name);
+  chipRow($('#tiers'), [4, 5, 6, 7, 8].map(t => ({ id: t })), 'tiers', v => 'T' + v.id);
+  chipRow($('#enchs'), [0, 1, 2, 3, 4].map(t => ({ id: t })), 'enchs', v => '.' + v.id);
+  for (const k of ADV) { const el = $('#' + k); el.value = cfg[k]; el.addEventListener('change', () => { const v = parseFloat(el.value); if (isFinite(v) && v >= 0) { cfg[k] = v; saveCfg(); recalc(); } else el.value = cfg[k]; }); }
+
+  $('#server').addEventListener('change', e => { cfg.server = e.target.value; routeChanged(false); });
+  $('#src').addEventListener('change', e => { cfg.src = e.target.value; if (cfg.dst === cfg.src) { cfg.dst = cfg.src === 'Caerleon' ? 'Black Market' : 'Caerleon'; $('#dst').value = cfg.dst; } routeChanged(true); });
+  $('#dst').addEventListener('change', e => { cfg.dst = e.target.value; if (cfg.dst === cfg.src) { cfg.src = cfg.dst === 'Lymhurst' ? 'Martlock' : 'Lymhurst'; $('#src').value = cfg.src; } routeChanged(true); });
+  $('#swap').addEventListener('click', () => {
+    if (cfg.dst === 'Black Market') { toast('На Чёрном рынке нельзя покупать, поэтому маршрут не разворачивается'); return; }
+    [cfg.src, cfg.dst] = [cfg.dst, cfg.src]; $('#src').value = cfg.src; $('#dst').value = cfg.dst; routeChanged(true);
+  });
+  const b = $('#budget');
+  const commitBudget = () => { cfg.budget = parseSilver(b.value); b.value = cfg.budget ? fmt(cfg.budget) : ''; saveCfg(); recalc(); };
+  b.addEventListener('change', commitBudget);
+  b.addEventListener('keydown', e => { if (e.key === 'Enter') b.blur(); });
+  $('#budgetQuick').addEventListener('click', e => { const q = e.target.closest('button'); if (!q) return; b.value = q.dataset.v; commitBudget(); });
+  $('#weight').addEventListener('change', e => { const v = parseFloat(e.target.value); cfg.weight = isFinite(v) && v > 0 ? v : 0; saveCfg(); recalc(); });
+  $('#premium').addEventListener('change', e => { cfg.premium = e.target.checked; saveCfg(); recalc(); });
+  $('#mode').addEventListener('click', e => { const m = e.target.closest('button'); if (!m) return; cfg.mode = m.dataset.v; setMode(cfg.mode); saveCfg(); recalc(); });
+  $('#go').addEventListener('click', () => scan(false));
+  document.querySelector('.tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) showTab(t.dataset.tab); });
+  updateGo();
+}
+function setMode(m) { for (const b of $('#mode').children) b.setAttribute('aria-pressed', String(b.dataset.v === m)); }
+function routeChanged(resetRisk) {
+  if (resetRisk) Object.assign(cfg, routeDefaults());
+  S.locked.clear(); S.excluded.clear(); S.open = null;
+  saveCfg(); updateGo(); if (S.scan) renderResult();
+}
+function priceUrls(items) {
+  const host = apiHost(cfg.server), loc = encodeURIComponent(cfg.src) + ',' + encodeURIComponent(cfg.dst), urls = [];
+  const g = items.filter(i => i.gear).map(i => i.id), r = items.filter(i => !i.gear).map(i => i.id);
+  for (const c of chunkIds(g, 3300)) urls.push(`${host}/api/v2/stats/prices/${c.join(',')}.json?locations=${loc}&qualities=1,2,3,4,5`);
+  for (const c of chunkIds(r, 3300)) urls.push(`${host}/api/v2/stats/prices/${c.join(',')}.json?locations=${loc}&qualities=1`);
+  return urls;
+}
+function updateGo() {
+  const items = buildItems(cfg), n = items.length, req = n ? priceUrls(items).length : 0;
+  const go = $('#go');
+  go.textContent = S.busy ? 'Проверяю цены…' : !S.scan ? 'Собрать груз' : (S.scan.key !== scanKey() ? 'Собрать груз заново' : 'Обновить цены');
+  go.disabled = S.busy || !n;
+  $('#gocap').textContent = !n ? 'В выбранных категориях нет предметов с такими тирами и зачарованием'
+    : `${fmt(n)} предметов, ${req + 2} запросов к базе цен` + (req > 60 ? `, около ${Math.round(req * 0.4)} секунд` : '');
+}
+
+/* ---------- сеть ---------- */
+let lastStart = 0;
+async function gate() { const now = Date.now(), wait = Math.max(0, lastStart + 330 - now); lastStart = now + wait; if (wait) await sleep(wait); }
+async function getJSON(url) {
+  for (let i = 0; ; i++) {
+    await gate();
+    const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 30000);
+    let r;
+    try { r = await fetch(url, { signal: ac.signal }); } finally { clearTimeout(tm); }
+    if (r.status === 429 && i < 2) { await sleep(9000 * (i + 1)); continue; }
+    if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+    return r.json();
+  }
+}
+async function pooled(urls, onRows) {
+  let next = 0;
+  const worker = async () => { while (next < urls.length) { const i = next++; onRows(await getJSON(urls[i])); } };
+  await Promise.all(Array.from({ length: Math.min(4, urls.length) }, worker));
+}
+function progress(f) { const bar = $('#bar'); bar.hidden = f == null; if (f != null) bar.firstElementChild.style.width = Math.round(f * 100) + '%'; }
+
+async function scan(demo) {
+  if (S.busy) return;
+  const items = buildItems(cfg); if (!items.length) return;
+  S.busy = true; S.error = null; S.histFail = false; updateGo(); progress(0.02);
+  const key = scanKey(), route = routeKey(), now = Date.now(), prices = {}, hist = {};
+  let err = null;
+  try {
+    if (demo) {
+      const d = demoData(items, cfg, now); indexPrices(d.rows, prices); indexHistory(d.hist, hist, now); await sleep(300);
+    } else {
+      const urls = priceUrls(items); let done = 0;
+      await pooled(urls, rows => { indexPrices(rows, prices); progress(0.02 + 0.8 * (++done / urls.length)); });
+      const pre = computeCandidates(items, prices, cfg, now).slice(0, 220);
+      const gearIds = [...new Set(pre.filter(c => c.item.gear).map(c => c.id))], resIds = [...new Set(pre.filter(c => !c.item.gear).map(c => c.id))];
+      const d0 = new Date(now - 9 * 864e5), date = `${d0.getUTCMonth() + 1}-${d0.getUTCDate()}-${d0.getUTCFullYear()}`;
+      const host = apiHost(cfg.server), loc = encodeURIComponent(cfg.dst), hurls = [];
+      for (const c of chunkIds(gearIds, 3300)) hurls.push(`${host}/api/v2/stats/history/${c.join(',')}.json?locations=${loc}&qualities=1,2,3,4,5&time-scale=24&date=${date}`);
+      for (const c of chunkIds(resIds, 3300)) hurls.push(`${host}/api/v2/stats/history/${c.join(',')}.json?locations=${loc}&qualities=1&time-scale=24&date=${date}`);
+      try { let hd = 0; await pooled(hurls, rows => { indexHistory(rows, hist, now); progress(0.82 + 0.18 * (++hd / hurls.length)); }); }
+      catch (e) { S.histFail = true; }
+    }
+  } catch (e) { err = e; }
+  S.busy = false; progress(null);
+  if (err) {
+    S.error = err.status === 429 ? 'limit' : (err.status ? 'http' + err.status : 'net');
+    updateGo(); renderResult(); return;
+  }
+  if (S.scan && S.scan.route !== route) { S.locked.clear(); S.excluded.clear(); }
+  S.scan = { key, route, time: now, prices, hist, items, demo: !!demo, src: cfg.src, dst: cfg.dst };
+  S.open = null; updateGo(); recalc();
+  if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------- расчёт и вывод ---------- */
+function planCfg() { return Object.assign({}, cfg, S.scan ? { src: S.scan.src, dst: S.scan.dst } : {}); }
+function recalc() {
+  if (!S.scan) { renderResult(); return; }
+  const c = planCfg();
+  S.cands = computeCandidates(S.scan.items, S.scan.prices, c, Date.now());
+  applyHistory(S.cands, S.scan.hist);
+  S.plan = makePlan(S.cands, c, S.locked, S.excluded);
+  renderResult();
+}
+const hhmm = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+function errorHTML() {
+  const txt = S.error === 'limit' ? 'База цен просит подождать: слишком много запросов за короткое время. Попробуй через минуту.'
+    : S.error === 'net' ? 'Не получилось связаться с базой цен. Если Караван открыт внутри чата или другого приложения, сеть там закрыта: скачай файл и открой его в обычном браузере. Иначе проверь интернет.'
+      : 'База цен ответила ошибкой (' + esc(S.error.replace('http', '')) + '). Обычно это проходит само, попробуй ещё раз чуть позже.';
+  return `<div class="note err">${txt}<br><button type="button" data-act="retry">Попробовать ещё раз</button> <button type="button" data-act="demo">Посмотреть на выдуманных ценах</button></div>`;
+}
+function emptyHTML() {
+  return `<div class="empty"><h2>Что везти в этот рейс?</h2><ol>
+    <li>Укажи маршрут, серебро и свободный вес.</li>
+    <li>Нажми «Собрать груз». Караван проверит цены и подберёт набор, который даёт больше всего прибыли и влезает в лимиты.</li>
+    <li>Покупай по списку и отмечай купленное. Если цена в игре другая, вычеркни позицию, и остаток груза пересоберётся.</li>
+  </ol></div>`;
+}
+function gaugeHTML(label, used, cap, unit) {
+  if (!isFinite(cap)) return `<div class="gauge"><div class="gl"><span>${label}</span><span>${used} ${unit}, лимит не задан</span></div></div>`;
+  const pct = cap > 0 ? Math.min(100, used.raw / cap * 100) : 0;
+  return `<div class="gauge"><div class="gl"><span>${label}</span><span>${used.txt} из ${used.capTxt} ${unit}</span></div><div class="gt"><i style="width:${pct.toFixed(1)}%"></i></div></div>`;
+}
+function detailHTML(r, pc) {
+  const c = r.cand, it = c.item, order = pc.mode === 'order';
+  const sellLine = (it.gear && !order ? 'ордер «' + QN[c.qs] + '», ' : '') + fmt(c.sell);
+  let h = `<div class="idet"><dl>
+    <div><dt>Купить: ${esc(cityName(pc.src))}</dt><dd>${it.gear ? QN[c.qb] + ', ' : ''}около ${fmt(c.buy)}</dd></div>
+    <div><dt>${order ? 'Выставить' : 'Сдать'}: ${esc(cityName(pc.dst))}</dt><dd>${sellLine}</dd></div>
+    <div><dt>Потолок цены закупки</dt><dd>${fmt(c.net)}</dd></div>
+    <div><dt>Чистыми с первой штуки</dt><dd>+${fmt(c.profit)} (${(c.roi * 100).toFixed(0)}%)</dd></div>
+    <div><dt>Продаётся за день</dt><dd>${c.vol != null ? 'около ' + fmt(c.vol) + ' шт.' : 'нет данных'}</dd></div>
+    <div><dt>Средняя цена сделок за неделю</dt><dd>${c.avg ? fmt(c.avg) : 'нет данных'}</dd></div>
+    <div><dt>Цена закупки записана</dt><dd>${fmtAge(c.ageB)} назад</dd></div>
+    <div><dt>Цена сбыта записана</dt><dd>${fmtAge(c.ageS)} назад</dd></div>
+    <div><dt>Вес позиции</dt><dd>${(Math.round(r.weight * 10) / 10).toLocaleString('ru-RU')} кг</dd></div>
+    <div><dt>Доверие к ценам</dt><dd>${Math.round(c.conf * 100)}%</dd></div>
+  </dl>`;
+  if (r.locked) {
+    h += `<div class="bought">
+      <div><label>Куплено, шт.</label><span class="step"><button type="button" data-act="dec" aria-label="Меньше">−</button><b>${fmt(r.qty)}</b><button type="button" data-act="inc" aria-label="Больше">+</button></span></div>
+      <div><label for="ap">Цена за штуку по факту</label><input id="ap" type="text" inputmode="text" data-act="price" placeholder="${fmt(r.cost / r.qty)}" value="${r.actualBuy ? fmt(r.actualBuy) : ''}"></div>
+      <button type="button" class="tbtn quiet" data-act="unlock">Снять отметку</button>
+    </div>`;
+  } else {
+    h += `<div class="bought"><button type="button" class="tbtn solid" data-act="lockbtn">Куплено</button><button type="button" class="tbtn quiet" data-act="exclude">Вычеркнуть: цена в игре другая</button></div>`;
+  }
+  return h + '</div>';
+}
+function rowHTML(r, pc) {
+  const c = r.cand, it = c.item, open = S.open === r.key;
+  const dot = c.conf >= 0.55 ? 'g' : c.conf >= 0.25 ? 'a' : 'r';
+  return `<div class="item${r.locked ? ' done' : ''}" data-key="${esc(r.key)}">
+    <div class="irow">
+      <input type="checkbox" class="chk" data-act="lock" ${r.locked ? 'checked' : ''} aria-label="Куплено: ${esc(it.name)} ${tierLabel(it)}">
+      <span class="ic">${tierLabel(it)}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${c.id}.png?size=64&amp;quality=${c.qb}" onerror="this.remove()"></span>
+      <button type="button" class="imain" data-act="open" aria-expanded="${open}">
+        <div class="iname">${esc(it.name)}</div>
+        <div class="imeta"><b>${tierLabel(it)}</b>${it.gear ? ', ' + QN[c.qb].toLowerCase() : ''}, <b>${fmt(r.qty)} шт.</b> по ${fmt(r.cost / r.qty)}</div>
+        <div class="imeta"><span class="dot ${dot}"></span>цены ${fmtAge(c.ageB)} и ${fmtAge(c.ageS)} назад</div>
+      </button>
+      <div class="iprofit"><b>+${fmtShort(r.profit)}</b><span>${fmtShort(r.cost)}</span></div>
+    </div>${open ? detailHTML(r, pc) : ''}
+  </div>`;
+}
+function riskFactsHTML() {
+  const t = S.plan.totals, rm = riskMath(t, sameCity() ? 0 : cfg.gank, cfg.minutes), out = [];
+  if (!sameCity()) {
+    out.push(`<div>С учётом риска рейс в среднем даёт <b class="${rm.ev >= 0 ? 'pos' : 'negc'}">${rm.ev >= 0 ? '+' : '−'}${fmt(Math.abs(rm.ev))}</b></div>`);
+    out.push(`<div>Один потерянный груз съедает прибыль <b>${isFinite(rm.runsPerGank) ? Math.ceil(rm.runsPerGank) : '—'}</b> удачных рейсов</div>`);
+    out.push(`<div>Рейс выгоден, пока шанс потери ниже <b>${rm.breakEven.toFixed(0)}%</b></div>`);
+  }
+  if (rm.perHour != null) out.push(`<div>Это около <b>${fmtShort(rm.perHour)}</b> серебра в час</div>`);
+  return out.join('');
+}
+function updateRisk() { const el = $('#riskfacts'); if (el && S.plan) el.innerHTML = riskFactsHTML(); const o = $('#gankOut'); if (o) o.textContent = cfg.gank + '%'; }
+
+function renderResult() {
+  const el = $('#result'); let h = '';
+  if (S.error) h += errorHTML();
+  if (!S.scan) { el.innerHTML = h + emptyHTML(); return; }
+  const pc = planCfg(), p = S.plan, t = p.totals;
+  if (S.scan.demo) h += `<div class="note warn">Демо: все цены ниже выдуманы, чтобы показать, как выглядит накладная. Настоящие цены загрузятся, когда файл открыт в браузере с интернетом.</div>`;
+  if (S.scan.key !== scanKey()) h += `<div class="note warn">Ты поменял маршрут или набор товаров. Накладная ниже собрана по прежним условиям, нажми «Собрать груз заново».</div>`;
+  if (S.histFail) h += `<div class="note warn">Объёмы продаж не загрузились, поэтому Караван берёт по одной штуке каждой вещи.</div>`;
+  if (!p.rows.length) {
+    h += `<div class="empty"><h2>Выгодного груза не нашлось</h2><p>${S.cands.length ? 'Прибыльные позиции есть (' + S.cands.length + '), но они не проходят по серебру, весу или минимальной прибыли.' : 'На этом маршруте сейчас нет позиций, которые проходят фильтры.'} Что можно сделать:</p><ol style="list-style:disc">
+      <li>добавить тиры, зачарования или категории;</li><li>в тонкой настройке разрешить цены постарше;</li><li>выбрать другой город закупки.</li></ol></div>`;
+    el.innerHTML = h; return;
+  }
+  const adj = t.profit > 0 ? Math.round((1 - t.exp / t.profit) * 100) : 0;
+  const roi = t.cost > 0 ? (t.profit / t.cost * 100) : 0;
+  const nLocked = p.rows.filter(r => r.locked).length;
+  h += `<div class="sheet">
+    <div class="sheethead"><h2>Накладная</h2><span>${esc(cityName(pc.src))} → ${esc(cityName(pc.dst))}, цены загружены в ${hhmm(S.scan.time)}</span></div>
+    <div class="sum">
+      <div class="big"><span>Ожидаемая прибыль с рейса</span><b>${fmt(t.exp)}</b><small>По ценам из базы ${fmt(t.profit)}. Поправка на устаревшие цены: −${adj}%</small></div>
+      <div>
+        <dl class="kv"><div><dt>Вложить</dt><dd>${fmtShort(t.cost)}</dd></div><div><dt>Вернётся</dt><dd>${fmtShort(t.net)}</dd></div><div><dt>Доходность</dt><dd>${roi.toFixed(0)}%</dd></div></dl>
+        ${gaugeHTML('Серебро', { raw: t.cost, txt: fmtShort(t.cost), capTxt: fmtShort(p.budget) }, p.budget, '')}
+        ${isFinite(p.weightCap) ? gaugeHTML('Вес', { raw: t.weight, txt: Math.round(t.weight), capTxt: Math.round(p.weightCap) }, p.weightCap, 'кг') : gaugeHTML('Вес', Math.round(t.weight), Infinity, 'кг')}
+      </div>
+    </div>
+    <div class="risk">
+      <h3>Риск дороги</h3>
+      ${sameCity() ? '<div style="font-size:14px">Чёрный рынок стоит в Каэрлеоне: везти груз через зоны не нужно.</div>'
+      : `<div class="riskctl"><label for="gank" style="font-size:13px;color:var(--pmute);grid-column:1/-1">Шанс потерять груз за один рейс</label><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}"><output id="gankOut" for="gank">${cfg.gank}%</output></div>`}
+      <div class="mins"><label for="minutes">Минут на рейс</label><input id="minutes" type="number" min="1" step="1" value="${cfg.minutes}"></div>
+      <div class="riskfacts" id="riskfacts">${riskFactsHTML()}</div>
+    </div>
+    <div class="list">
+      <div class="listhead"><h3>Что купить</h3><span>${nLocked ? 'куплено ' + nLocked + ' из ' + p.rows.length : p.rows.length + ' ' + plural(p.rows.length, 'позиция', 'позиции', 'позиций')}</span></div>
+      ${p.rows.map(r => rowHTML(r, pc)).join('')}
+    </div>
+    <div class="acts">
+      <button type="button" class="tbtn solid" data-act="finish">Завершить рейс</button>
+      <button type="button" class="tbtn" data-act="copy">Скопировать список</button>
+      ${S.excluded.size ? `<button type="button" class="tbtn quiet" data-act="restore">Вернуть вычеркнутые (${S.excluded.size})</button>` : ''}
+    </div>
+    ${p.leftovers.length ? `<details class="left"><summary>Не вошло в груз: ещё ${p.leftovers.length}</summary><ul>${p.leftovers.map(l => `<li>${esc(l.cand.item.name)} ${tierLabel(l.cand.item)}: +${fmt(l.cand.profit)} со штуки, ${l.reason}</li>`).join('')}</ul></details>` : ''}
+  </div>`;
+  el.innerHTML = h;
+}
+function plural(n, a, b, c) { const m = n % 100, k = n % 10; return (m > 10 && m < 20) ? c : k === 1 ? a : (k >= 2 && k <= 4) ? b : c; }
+
+/* ---------- действия в накладной ---------- */
+function rowByKey(key) { return S.plan && S.plan.rows.find(r => r.key === key); }
+function onResultClick(e) {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const act = a.dataset.act, itemEl = a.closest('.item'), key = itemEl && itemEl.dataset.key, r = key && rowByKey(key);
+  if (act === 'retry') return scan(false);
+  if (act === 'demo') return scan(true);
+  if (act === 'open') { S.open = S.open === key ? null : key; return renderResult(); }
+  if (act === 'lock' || act === 'lockbtn' || act === 'unlock') {
+    if (!r) return;
+    if (S.locked.has(key)) S.locked.delete(key); else S.locked.set(key, { cand: r.cand, qty: r.qty, actualBuy: 0 });
+    return recalc();
+  }
+  if (act === 'inc' || act === 'dec') { const L = S.locked.get(key); if (!L) return; L.qty = Math.max(1, L.qty + (act === 'inc' ? 1 : -1)); return recalc(); }
+  if (act === 'exclude') {
+    S.excluded.add(key); S.locked.delete(key); S.open = null; recalc();
+    return toast('Вычеркнуто, остаток груза пересобран', 'Вернуть', () => { S.excluded.delete(key); recalc(); });
+  }
+  if (act === 'restore') { S.excluded.clear(); return recalc(); }
+  if (act === 'copy') return copyList();
+  if (act === 'finish') return finishDialog();
+}
+function onResultChange(e) {
+  const t = e.target;
+  if (t.id === 'minutes') { const v = parseFloat(t.value); if (v > 0) { cfg.minutes = v; saveCfg(); updateRisk(); } return; }
+  if (t.dataset.act === 'price') { const key = t.closest('.item').dataset.key, L = S.locked.get(key); if (L) { L.actualBuy = parseSilver(t.value); recalc(); } }
+}
+function onResultInput(e) { if (e.target.id === 'gank') { cfg.gank = Number(e.target.value); saveCfg(); updateRisk(); } }
+
+function listText() {
+  const pc = planCfg(), p = S.plan, order = pc.mode === 'order';
+  const lines = [`Караван: ${cityName(pc.src)} → ${cityName(pc.dst)}`];
+  for (const r of p.rows) {
+    const c = r.cand, it = c.item;
+    lines.push(`${r.locked ? '[x]' : '[ ]'} ${fmt(r.qty)} шт. ${it.name} ${tierLabel(it)}${it.gear ? ' (' + QN[c.qb].toLowerCase() + ')' : ''}: купить около ${fmt(c.buy)}, не дороже ${fmt(c.net)}; ${order ? 'выставить за' : 'сдать от'} ${fmt(c.sell)}`);
+  }
+  lines.push(`Вложить ${fmt(p.totals.cost)}, ожидаемая прибыль ${fmt(p.totals.exp)}`);
+  return lines.join('\n');
+}
+async function copyList() {
+  const text = listText();
+  try { await navigator.clipboard.writeText(text); toast('Список скопирован'); }
+  catch (e) {
+    modal(`<h3>Список для копирования</h3><p>Выдели текст и скопируй вручную.</p><textarea readonly>${esc(text)}</textarea><div class="dlgacts"><button type="button" data-close>Закрыть</button></div>`);
+    const ta = $('#modal textarea'); ta.focus(); ta.select();
+  }
+}
+function finishDialog() {
+  const p = S.plan, bought = p.rows.filter(r => r.locked), rows = bought.length ? bought : p.rows;
+  const invested = rows.reduce((s, r) => s + r.cost, 0), net = rows.reduce((s, r) => s + r.net, 0);
+  modal(`<h3>Завершить рейс</h3>
+    <p>${bought.length ? 'В рейс идут отмеченные позиции: ' + bought.length + '.' : 'Ничего не отмечено купленным, поэтому считаю весь список.'} Вложено ${fmt(invested)}.</p>
+    <div class="fld"><label for="rev">Сколько серебра получил с продажи</label><input id="rev" type="text" inputmode="text" value="${fmt(net)}"></div>
+    <label class="switch"><input type="checkbox" id="lost"> Груз потерян в дороге</label>
+    <div class="dlgacts"><button type="button" data-close>Отмена</button><button type="button" class="pri" id="saveRun">Записать в журнал</button></div>`);
+  $('#saveRun').addEventListener('click', () => {
+    const lost = $('#lost').checked, revenue = lost ? 0 : parseSilver($('#rev').value);
+    const j = LS.get('karavan.journal', []);
+    j.unshift({ ts: Date.now(), server: cfg.server, src: S.scan.src, dst: S.scan.dst, invested: Math.round(invested), revenue, profit: Math.round(revenue - invested), lost, n: rows.length, demo: !!S.scan.demo });
+    LS.set('karavan.journal', j.slice(0, 500));
+    S.locked.clear(); S.excluded.clear(); S.open = null; closeModal(); recalc();
+    toast('Рейс записан в журнал');
+  });
+}
+
+/* ---------- журнал ---------- */
+function renderJournal() {
+  const j = LS.get('karavan.journal', []), el = $('#tab-journal');
+  if (!j.length) { el.innerHTML = `<div class="empty"><h2>Журнал пуст</h2><p>Здесь появятся завершённые рейсы и общий итог. Собери груз, отметь купленное и нажми «Завершить рейс».</p></div>`; return; }
+  const total = j.reduce((s, r) => s + r.profit, 0);
+  el.innerHTML = `<section class="journal"><h2>Журнал рейсов</h2>
+    <div class="jsum"><div><span>Рейсов</span><b>${j.length}</b></div><div><span>Итог</span><b>${fmtShort(total)}</b></div><div><span>В среднем за рейс</span><b>${fmtShort(total / j.length)}</b></div></div>
+    ${j.map((r, i) => `<div class="jrow"><div>${esc(cityName(r.src))} → ${esc(cityName(r.dst))}${r.lost ? ', груз потерян' : ''}${r.demo ? ', демо' : ''}<small>${new Date(r.ts).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, вложено ${fmtShort(r.invested)}, позиций: ${r.n}</small></div>
+      <div class="p ${r.profit >= 0 ? 'up' : 'down'}">${r.profit >= 0 ? '+' : '−'}${fmtShort(Math.abs(r.profit))}</div><button type="button" data-del="${i}">Удалить</button></div>`).join('')}
+  </section>`;
+}
+function onJournalClick(e) {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const j = LS.get('karavan.journal', []), i = Number(b.dataset.del), gone = j.splice(i, 1)[0];
+  LS.set('karavan.journal', j); renderJournal();
+  toast('Рейс удалён', 'Вернуть', () => { const k = LS.get('karavan.journal', []); k.splice(i, 0, gone); LS.set('karavan.journal', k); renderJournal(); });
+}
+function showTab(tab) {
+  for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+  $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft';
+  $('.how').hidden = tab !== 'run';
+  if (tab === 'journal') renderJournal();
+  if (tab === 'craft') renderCraft();
+}
+
+/* ---------- окно и уведомление ---------- */
+function modal(html) {
+  $('#modal').innerHTML = `<div class="ovl"><div class="dlg" role="dialog" aria-modal="true">${html}</div></div>`;
+  const first = $('#modal input, #modal textarea, #modal button'); if (first) first.focus();
+}
+function closeModal() { $('#modal').innerHTML = ''; }
+let toastTimer = 0;
+function toast(text, actionLabel, action) {
+  const el = $('#toast'); clearTimeout(toastTimer);
+  el.innerHTML = `<div class="toast" role="status"><span>${esc(text)}</span>${actionLabel ? `<button type="button">${esc(actionLabel)}</button>` : ''}</div>`;
+  if (actionLabel) el.querySelector('button').addEventListener('click', () => { el.innerHTML = ''; action(); });
+  toastTimer = setTimeout(() => { el.innerHTML = ''; }, actionLabel ? 6000 : 2600);
+}
+
+/* ---------- запуск ---------- */
+initForm();
+renderResult();
+$('#result').addEventListener('click', onResultClick);
+$('#result').addEventListener('change', onResultChange);
+$('#result').addEventListener('input', onResultInput);
+$('#tab-journal').addEventListener('click', onJournalClick);
+$('#modal').addEventListener('click', e => { if (e.target.classList.contains('ovl') || e.target.closest('[data-close]')) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+</script>
+<script>
+"use strict";
+/* ===== Караван: крафт под Чёрный рынок ===== */
+const QP = [0, 0.689, 0.25, 0.056, 0.005]; // примерный шанс качества при крафте: обычное, хорошее, выдающееся, отличное
+const RRR = [[15.2, 'Без фокуса'], [24.8, 'Бонус города'], [43.5, 'С фокусом'], [47.9, 'Фокус и бонус города']];
+const CDEF = { src: 'Martlock', dst: 'Black Market', budget: 2000000, rrr: 24.8, fee: 0, cats: ['melee', 'ranged', 'magic', 'plate', 'leather', 'cloth', 'offhand', 'cape', 'bag'], tiers: [5, 6, 7], enchs: [0, 1], arts: true };
+const CF = { cfg: Object.assign({}, CDEF, LS.get('karavan.craft', {})), busy: false, scan: null, rows: [], plan: null, open: null, error: null };
+for (const k of ['cats', 'tiers', 'enchs']) if (!Array.isArray(CF.cfg[k]) || !CF.cfg[k].length) CF.cfg[k] = CDEF[k].slice();
+const cSave = () => LS.set('karavan.craft', CF.cfg);
+const matId = (kind, t, e) => kind.startsWith('A:') ? `T${t}_${kind.slice(2)}` : (e ? `T${t}_${kind}_LEVEL${e}@${e}` : `T${t}_${kind}`);
+const MATN = { METALBAR: 'Слитки', LEATHER: 'Кожа', CLOTH: 'Ткань', PLANKS: 'Брусья', STONEBLOCK: 'Блоки' };
+const matName = (kind, t, e) => kind.startsWith('A:') ? 'Артефакт T' + t : `${MATN[kind] || kind} ${t}.${e}`;
+
+function craftItems(c) {
+  const out = [], cats = new Set(c.cats);
+  for (const g of DB.gear) {
+    const r = DB.rec[g[0]]; if (!r || !cats.has(g[2])) continue;
+    const hasArt = r.some(m => m[0].startsWith('A:')); if (hasArt && !c.arts) continue;
+    const maxE = g.length > 4 ? g[4] : 4;
+    for (const t of c.tiers) for (const e of c.enchs) {
+      if (e > maxE) continue;
+      out.push({ id: `T${t}_${g[0]}` + (e ? `@${e}` : ''), name: g[1], tier: t, ench: e, cat: g[2], w: g[3][t - 4], gear: true, mats: r.map(m => ({ kind: m[0], n: m[1], ret: !!m[2], id: matId(m[0], t, e), t, e })) });
+    }
+  }
+  return out;
+}
+
+function craftCompute(items, P, hist, c, now) {
+  const fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, rr = c.rrr / 100, rows = [];
+  for (const it of items) {
+    const D = P[it.id] && P[it.id][c.dst]; if (!D) continue;
+    let cost = 0, aMat = 0, ok = true;
+    const mats = it.mats.map(m => {
+      const s = P[m.id] && P[m.id][c.src] && P[m.id][c.src][1];
+      const a = s ? ageH(s.sell_price_min_date, now) : Infinity;
+      if (!s || !(s.sell_price_min > 0) || a > cfg.maxAge) { ok = false; return null; }
+      const eff = m.n * (m.ret ? 1 - rr : 1);
+      cost += eff * s.sell_price_min; aMat = Math.max(aMat, a);
+      return Object.assign({}, m, { price: s.sell_price_min, eff, age: a });
+    });
+    if (!ok) continue;
+    cost += c.fee;
+    let best = 0, exp = 0, aSell = 0, q1 = 0;
+    for (let q = 1; q <= 4; q++) {
+      const d = D[q];
+      if (d && d.buy_price_max > 0 && ageH(d.buy_price_max_date, now) <= cfg.maxAge) { if (d.buy_price_max > best) { best = d.buy_price_max; aSell = Math.max(aSell, ageH(d.buy_price_max_date, now)); } }
+      if (q === 1) q1 = best;
+      exp += QP[q] * best;
+    }
+    if (!(exp > 0)) continue;
+    const net = exp * (1 - fee), profit = net - cost, roi = profit / cost;
+    if (profit <= 0 || roi * 100 < cfg.minRoi || roi * 100 > cfg.maxRoi) continue;
+    let vol = null; for (let q = 1; q <= 5; q++) { const h = hist[it.id + '|' + q]; if (h) vol = (vol || 0) + h.vol; }
+    rows.push({ it, mats, cost, exp, q1, net, profit, roi, aMat, aSell, conf: Math.pow(0.5, (aMat + aSell) / cfg.halfLife), vol });
+  }
+  return rows.sort((a, b) => b.profit * b.conf - a.profit * a.conf);
+}
+
+/* План: раздаём бюджет самым выгодным на вложенное серебро позициям, не больше доли дневного объёма */
+function craftPlan(rows, c) {
+  let left = c.budget; const plan = [];
+  const sorted = rows.slice().sort((a, b) => b.roi * b.conf - a.roi * a.conf);
+  for (const r of sorted) {
+    const cap = r.vol != null ? Math.max(1, Math.floor(r.vol * cfg.share / 100)) : 1;
+    const qty = Math.min(cap, Math.floor(left / r.cost));
+    if (qty < 1 || r.profit * qty < cfg.minPosProfit) continue;
+    plan.push({ r, qty }); left -= r.cost * qty;
+    if (plan.length >= 30) break;
+  }
+  plan.sort((a, b) => b.r.profit * b.qty * b.r.conf - a.r.profit * a.qty * a.r.conf);
+  const t = plan.reduce((s, p) => (s.cost += p.r.cost * p.qty, s.profit += p.r.profit * p.qty, s.exp += p.r.profit * p.qty * p.r.conf, s.n += p.qty, s), { cost: 0, profit: 0, exp: 0, n: 0 });
+  return { plan, t };
+}
+
+function craftUrls(items, c) {
+  const host = apiHost(cfg.server), urls = [], mats = new Set();
+  for (const it of items) for (const m of it.mats) mats.add(m.id);
+  for (const ch of chunkIds([...mats], 3300)) urls.push(`${host}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.src)}&qualities=1`);
+  for (const ch of chunkIds(items.map(i => i.id), 3300)) urls.push(`${host}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.dst)}&qualities=1,2,3,4`);
+  return urls;
+}
+
+async function craftScan(demo) {
+  if (CF.busy) return;
+  const c = CF.cfg, items = craftItems(c); if (!items.length) return;
+  CF.busy = true; CF.error = null; renderCraft();
+  const now = Date.now(), P = {}, H = {};
+  try {
+    if (demo) {
+      const d = demoData(items, { src: c.dst, dst: c.dst }, now); indexPrices(d.rows, P); indexHistory(d.hist, H, now);
+      for (const it of items) {
+        const D = P[it.id] && P[it.id][c.dst]; if (!D) continue;
+        const ref = (D[1] || D[2] || {}).buy_price_max || 0, arts = it.mats.filter(m => !m.ret), units = it.mats.filter(m => m.ret).reduce((s, m) => s + m.n, 0);
+        for (const m of it.mats) {
+          if (P[m.id]) continue;
+          const base = m.ret ? ref * 0.86 / Math.max(units, 1) * (0.8 + 0.4 * ((m.id.length * 7) % 10) / 10) : ref * 0.25 / arts.length;
+          indexPrices([{ item_id: m.id, city: c.src, quality: 1, sell_price_min: Math.round(base), sell_price_min_date: new Date(now - 36e5 * (1 + (m.id.length % 6))).toISOString().slice(0, 19) }], P);
+        }
+      }
+      await sleep(250);
+    } else {
+      const urls = craftUrls(items, c); let done = 0;
+      await pooled(urls, rows => { indexPrices(rows, P); setCraftBar(0.05 + 0.8 * (++done / urls.length)); });
+      const pre = craftCompute(items, P, {}, c, now).slice(0, 200).map(r => r.it.id);
+      const d0 = new Date(now - 9 * 864e5), date = `${d0.getUTCMonth() + 1}-${d0.getUTCDate()}-${d0.getUTCFullYear()}`;
+      try { await pooled(chunkIds(pre, 3300).map(ch => `${apiHost(cfg.server)}/api/v2/stats/history/${ch.join(',')}.json?locations=${encodeURIComponent(c.dst)}&qualities=1,2,3,4&time-scale=24&date=${date}`), rows => indexHistory(rows, H, now)); } catch (e) { }
+    }
+    CF.scan = { time: now, items, P, H, demo: !!demo, src: c.src, dst: c.dst };
+    CF.open = null;
+  } catch (e) { CF.error = e.status === 429 ? 'limit' : (e.status ? 'http' + e.status : 'net'); }
+  CF.busy = false; craftRecalc();
+}
+function craftRecalc() {
+  if (CF.scan) { const c = Object.assign({}, CF.cfg, { src: CF.scan.src, dst: CF.scan.dst }); CF.rows = craftCompute(CF.scan.items, CF.scan.P, CF.scan.H, c, Date.now()); CF.plan = craftPlan(CF.rows, c); }
+  renderCraft();
+}
+function setCraftBar(f) { const b = $('#cbar'); if (b) { b.hidden = false; b.firstElementChild.style.width = Math.round(f * 100) + '%'; } }
+
+function craftSetupHTML() {
+  const c = CF.cfg, items = craftItems(c), chips = (list, key, label) => list.map(v => `<button type="button" class="chip" data-ck="${key}" data-v="${v.id}" aria-pressed="${c[key].includes(v.id)}">${label(v)}</button>`).join('');
+  const cityOpts = (sel, withBM) => CITIES.filter(x => withBM || !x.sellOnly).map(x => `<option value="${esc(x.id)}" ${x.id === sel ? 'selected' : ''}>${x.name}</option>`).join('');
+  return `<section class="setup"><h2>Что крафтить</h2>
+    <div class="fld"><div class="route"><div><label for="cSrc">Материалы и крафт в</label><select id="cSrc">${cityOpts(c.src, false)}</select></div><span></span><div><label for="cDst">Сдать в</label><select id="cDst">${cityOpts(c.dst, true)}</select></div></div></div>
+    <div class="two fld"><div><label for="cBudget">Серебро на крафт</label><input id="cBudget" type="text" value="${c.budget ? fmt(c.budget) : ''}" placeholder="например 2 млн"></div>
+      <div><label for="cRrr">Возврат ресурсов</label><select id="cRrr">${RRR.map(([v, n]) => `<option value="${v}" ${c.rrr === v ? 'selected' : ''}>${n}, ${String(v).replace('.', ',')}%</option>`).join('')}${RRR.some(x => x[0] === c.rrr) ? '' : `<option value="${c.rrr}" selected>Свой, ${c.rrr}%</option>`}</select></div></div>
+    <div class="chipgroup"><span class="lbl">Что крафтить</span><div class="chips">${chips(CATS.filter(x => x.id !== 'raw' && x.id !== 'refined'), 'cats', v => v.name)}</div></div>
+    <div class="chipgroup"><span class="lbl">Тир</span><div class="chips">${chips([4, 5, 6, 7, 8].map(t => ({ id: t })), 'tiers', v => 'T' + v.id)}</div></div>
+    <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips">${chips([0, 1, 2, 3, 4].map(t => ({ id: t })), 'enchs', v => '.' + v.id)}</div></div>
+    <div class="rowline"><label class="switch"><input type="checkbox" id="cArts" ${c.arts ? 'checked' : ''}> Вещи с артефактами</label></div>
+    <div class="fld"><label for="cFee">Плата станции за одну вещь, серебро</label><input id="cFee" type="number" min="0" step="100" value="${c.fee}"><div class="hint">Посмотри в окне станции перед крафтом. Налог с продажи и премиум берутся из вкладки «Рейс».</div></div>
+    <button class="go" type="button" data-c="scan" ${CF.busy || !items.length ? 'disabled' : ''}>${CF.busy ? 'Проверяю цены…' : CF.scan ? 'Обновить цены' : 'Найти выгодный крафт'}</button>
+    <div class="gocap">${items.length ? fmt(items.length) + ' рецептов' : 'Под эти фильтры рецептов нет'}</div>
+    <div class="bar" id="cbar" hidden><i></i></div></section>`;
+}
+function craftRowHTML(p, i) {
+  const r = p.r, it = r.it, open = CF.open === it.id, dot = r.conf >= 0.55 ? 'g' : r.conf >= 0.25 ? 'a' : 'r';
+  let h = `<div class="item" data-id="${esc(it.id)}"><div class="irow" style="grid-template-columns:auto 1fr auto">
+    <span class="ic">${tierLabel(it)}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${it.id}.png?size=64" onerror="this.remove()"></span>
+    <button type="button" class="imain" data-c="open" aria-expanded="${open}"><div class="iname">${esc(it.name)}</div>
+      <div class="imeta"><b>${tierLabel(it)}</b>, <b>${p.qty} шт.</b>, себестоимость ${fmt(r.cost)}</div>
+      <div class="imeta"><span class="dot ${dot}"></span>${r.vol != null ? 'продаётся около ' + fmt(r.vol) + ' в день' : 'объём неизвестен'}</div></button>
+    <div class="iprofit"><b>+${fmtShort(r.profit * p.qty)}</b><span>+${fmtShort(r.profit)} за шт.</span></div></div>`;
+  if (open) {
+    h += `<div class="idet"><dl>
+      <div><dt>Ожидаемая цена сдачи</dt><dd>${fmt(r.exp)}</dd></div><div><dt>Ордер на обычное качество</dt><dd>${fmt(r.q1)}</dd></div>
+      <div><dt>Чистыми за штуку</dt><dd>+${fmt(r.profit)} (${(r.roi * 100).toFixed(0)}%)</dd></div><div><dt>Доверие к ценам</dt><dd>${Math.round(r.conf * 100)}%</dd></div>
+      <div><dt>Цены материалов</dt><dd>${fmtAge(r.aMat)} назад</dd></div><div><dt>Цена сдачи</dt><dd>${fmtAge(r.aSell)} назад</dd></div></dl>
+      <div class="bought" style="display:block"><span class="lbl" style="color:var(--pmute)">Закупка на ${p.qty} шт. с учётом возврата ${String(CF.cfg.rrr).replace('.', ',')}%</span>
+      ${r.mats.map(m => `<div class="imeta" style="font-size:13.5px;margin-top:4px"><b>${fmt(Math.ceil(m.eff * p.qty))} шт.</b> ${esc(matName(m.kind, m.t, m.e))} по ${fmt(m.price)}${m.ret ? '' : ', не возвращается'}</div>`).join('')}
+      </div></div>`;
+  }
+  return h + '</div>';
+}
+function craftResultHTML() {
+  let h = '';
+  if (CF.error) h += `<div class="note err">${CF.error === 'net' ? 'Не получилось связаться с базой цен. Открой файл в обычном браузере с интернетом.' : CF.error === 'limit' ? 'База цен просит подождать минуту.' : 'База цен ответила ошибкой, попробуй позже.'}<br><button type="button" data-c="scan">Попробовать ещё раз</button> <button type="button" data-c="demo">Посмотреть на выдуманных ценах</button></div>`;
+  if (!CF.scan) return h + `<div class="empty"><h2>Что выгодно скрафтить?</h2><ol><li>Выбери город, где покупаешь материалы и крафтишь, и куда сдаёшь.</li><li>Укажи возврат ресурсов: с фокусом и в городе с бонусом он выше.</li><li>Караван сравнит себестоимость с ордерами на покупку и соберёт план на твой бюджет.</li></ol></div>`;
+  const p = CF.plan, t = p.t, s = CF.scan;
+  if (s.demo) h += `<div class="note warn">Демо: цены выдуманы, чтобы показать, как выглядит план.</div>`;
+  if (!p.plan.length) return h + `<div class="empty"><h2>Выгодного крафта не нашлось</h2><p>Попробуй другие тиры или зачарования, другой город материалов или возврат ресурсов с фокусом.</p></div>`;
+  h += `<div class="sheet"><div class="sheethead"><h2>План крафта</h2><span>${esc(cityName(s.src))} → ${esc(cityName(s.dst))}, цены в ${new Date(s.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span></div>
+    <div class="sum"><div class="big"><span>Ожидаемая прибыль</span><b>${fmt(t.exp)}</b><small>По ценам из базы ${fmt(t.profit)}. Качество при крафте случайное, оно уже учтено в цене сдачи.</small></div>
+    <dl class="kv"><div><dt>Вложить</dt><dd>${fmtShort(t.cost)}</dd></div><div><dt>Вещей</dt><dd>${t.n}</dd></div><div><dt>Доходность</dt><dd>${(t.profit / t.cost * 100).toFixed(0)}%</dd></div></dl></div>
+    <div class="list"><div class="listhead"><h3>Что крафтить</h3><span>${p.plan.length} ${plural(p.plan.length, 'позиция', 'позиции', 'позиций')}</span></div>${p.plan.map(craftRowHTML).join('')}</div>
+    <div class="acts"><button type="button" class="tbtn solid" data-c="copy">Скопировать список закупки</button></div></div>`;
+  return h;
+}
+function renderCraft() { const el = $('#tab-craft'); if (el.hidden) return; el.innerHTML = craftSetupHTML() + `<section aria-live="polite">${craftResultHTML()}</section>`; }
+
+function craftShopping() {
+  const s = CF.scan, need = new Map();
+  for (const p of CF.plan.plan) for (const m of p.r.mats) { const k = m.id, x = need.get(k) || { m, n: 0 }; x.n += m.eff * p.qty; need.set(k, x); }
+  const lines = [`Крафт: материалы в ${cityName(s.src)}, сдать в ${cityName(s.dst)}`, 'Купить:'];
+  for (const { m, n } of need.values()) lines.push(`- ${fmt(Math.ceil(n))} шт. ${matName(m.kind, m.t, m.e)} (${m.id}) по ~${fmt(m.price)}`);
+  lines.push('Скрафтить:');
+  for (const p of CF.plan.plan) lines.push(`- ${p.qty} шт. ${p.r.it.name} ${tierLabel(p.r.it)}, сдавать от ${fmt(p.r.q1)}`);
+  return lines.join('\n');
+}
+$('#tab-craft').addEventListener('click', e => {
+  const ch = e.target.closest('[data-ck]');
+  if (ch) { const k = ch.dataset.ck, v = k === 'cats' ? ch.dataset.v : Number(ch.dataset.v), a = CF.cfg[k], i = a.indexOf(v); if (i >= 0) { if (a.length === 1) return toast('Нужен хотя бы один вариант'); a.splice(i, 1); } else a.push(v); cSave(); return renderCraft(); }
+  const b = e.target.closest('[data-c]'); if (!b) return;
+  const a = b.dataset.c;
+  if (a === 'scan') return craftScan(false);
+  if (a === 'demo') return craftScan(true);
+  if (a === 'open') { const id = b.closest('.item').dataset.id; CF.open = CF.open === id ? null : id; return renderCraft(); }
+  if (a === 'copy') { const txt = craftShopping(); navigator.clipboard.writeText(txt).then(() => toast('Список закупки скопирован'), () => { modal(`<h3>Список закупки</h3><textarea readonly>${esc(txt)}</textarea><div class="dlgacts"><button type="button" data-close>Закрыть</button></div>`); $('#modal textarea').select(); }); }
+});
+$('#tab-craft').addEventListener('change', e => {
+  const t = e.target, c = CF.cfg;
+  if (t.id === 'cSrc') c.src = t.value; else if (t.id === 'cDst') c.dst = t.value;
+  else if (t.id === 'cBudget') c.budget = parseSilver(t.value);
+  else if (t.id === 'cRrr') c.rrr = Number(t.value);
+  else if (t.id === 'cFee') c.fee = Math.max(0, Number(t.value) || 0);
+  else if (t.id === 'cArts') c.arts = t.checked;
+  else return;
+  if (c.src === c.dst) { c.dst = 'Black Market'; }
+  cSave();
+  if (['cSrc', 'cDst'].includes(t.id)) { CF.scan = null; renderCraft(); } else craftRecalc();
+});
+
+</script>
+</body>
+</html>
