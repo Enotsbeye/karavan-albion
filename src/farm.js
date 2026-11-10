@@ -113,7 +113,7 @@ function farmResultHTML() {
   const groups = [['farm', c.farm], ['herbgarden', c.herb], ['pasture', c.pasture], ['kennel', c.kennel]];
   let total = 0; const plan = [];
   for (const [k, n] of groups) { const best = rows.filter(r => r.kind === k).sort((a, b) => b.perDay - a.perDay)[0]; if (best && n > 0 && best.perDay > 0) { const v = best.perDay * c.slots * n; total += v; plan.push(`${FKIND[k]} ×${n}: ${best.name} ${'T' + best.t}, +${fmtShort(v)} в день`); } }
-  h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span></div>
+  h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
     <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${c.focus ? ' С фокусом.' : ''}</small></div>
     <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Добавь участки, чтобы собрать план.'}</div></div>`;
   for (const [k] of groups) {

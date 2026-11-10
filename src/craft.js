@@ -210,7 +210,7 @@ function craftResultHTML() {
   const p = CF.plan, t = p.t, s = CF.scan;
   if (s.demo) h += `<div class="note warn">Демо: цены выдуманы, чтобы показать, как выглядит план.</div>`;
   if (!p.plan.length) return h + `<div class="empty"><h2>Выгодного крафта не нашлось</h2><p>Попробуй другие тиры или зачарования, другой город материалов или возврат ресурсов с фокусом.</p></div>` + focusHTML();
-  h += `<div class="sheet"><div class="sheethead"><h2>План крафта</h2><span>${esc(cityName(s.src))} → ${esc(cityName(s.dst))}, цены в ${new Date(s.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span></div>
+  h += `<div class="sheet"><div class="sheethead"><h2>План крафта</h2><span>${esc(cityName(s.src))} → ${esc(cityName(s.dst))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
     <div class="sum"><div class="big"><span>Ожидаемая прибыль</span><b>${fmt(t.exp)}</b><small>По ценам из базы ${fmt(t.profit)}. Качество при крафте случайное, оно уже учтено в цене сдачи.</small></div>
     <dl class="kv"><div><dt>Вложить</dt><dd>${fmtShort(t.cost)}</dd></div><div><dt>Вещей</dt><dd>${t.n}</dd></div><div><dt>Доходность</dt><dd>${(t.profit / t.cost * 100).toFixed(0)}%</dd></div></dl></div>
     <div class="list"><div class="listhead"><h3>Что крафтить</h3><span>${p.plan.length} ${plural(p.plan.length, 'позиция', 'позиции', 'позиций')}</span></div>${p.plan.map(craftRowHTML).join('')}</div>

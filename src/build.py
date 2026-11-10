@@ -5,7 +5,8 @@ ui=open('ui.js',encoding='utf-8').read()
 rec=open('craft.js',encoding='utf-8').read()
 assert '</script>' not in rec
 farm=open('farm.js',encoding='utf-8').read()
-html=open('app.src.html',encoding='utf-8').read().replace('/*__CORE__*/',core).replace('/*__UI__*/',ui).replace('/*__CRAFT__*/',rec).replace('/*__FARM__*/',farm)
+i18n=open('i18n.js',encoding='utf-8').read()
+html=open('app.src.html',encoding='utf-8').read().replace('/*__CORE__*/',core).replace('/*__UI__*/',ui).replace('/*__CRAFT__*/',rec).replace('/*__FARM__*/',farm).replace('/*__I18N__*/',i18n)
 assert '</script>' not in core and '</script>' not in ui
 open('karavan-albion.html','w',encoding='utf-8').write(html)
 open('core.built.js','w',encoding='utf-8').write(core)

@@ -12,7 +12,7 @@ const DEF = {
   server: 'europe', src: 'Lymhurst', dst: 'Black Market', budget: 2000000, weight: 0, premium: true, mode: 'instant',
   cats: ['melee', 'ranged', 'magic', 'plate', 'leather', 'cloth', 'offhand', 'cape', 'bag'], tiers: [5, 6, 7], enchs: [0, 1, 2],
   maxAge: 24, halfLife: 8, minRoi: 5, maxRoi: 150, minPosProfit: 3000, share: 10, slip: 2, maxPerPos: 5,
-  taxPremium: 4, taxFree: 8, setupFee: 2.5, gank: 10, minutes: 15
+  taxPremium: 4, taxFree: 8, setupFee: 2.5, gank: 10, minutes: 15, auto: false, fresh: false
 };
 const ADV = ['maxAge', 'halfLife', 'minRoi', 'maxRoi', 'minPosProfit', 'maxPerPos', 'share', 'slip', 'taxPremium', 'taxFree', 'setupFee'];
 let cfg = Object.assign({}, DEF, LS.get('karavan.cfg', {}));
@@ -75,6 +75,11 @@ function initForm() {
   $('#weight').addEventListener('change', e => { const v = parseFloat(e.target.value); cfg.weight = isFinite(v) && v > 0 ? v : 0; saveCfg(); recalc(); });
   $('#premium').addEventListener('change', e => { cfg.premium = e.target.checked; saveCfg(); recalc(); });
   $('#mode').addEventListener('click', e => { const m = e.target.closest('button'); if (!m) return; cfg.mode = m.dataset.v; setMode(cfg.mode); saveCfg(); recalc(); });
+  $('#lang').value = LANG;
+  $('#lang').addEventListener('change', e => { try { localStorage.setItem('karavan.lang', e.target.value); } catch (x) { } location.reload(); });
+  $('#auto').checked = !!cfg.auto; $('#fresh').checked = !!cfg.fresh;
+  $('#auto').addEventListener('change', e => { cfg.auto = e.target.checked; saveCfg(); if (cfg.auto) toast('Цены обновятся сами, пока окно открыто.'); autoTick(); });
+  $('#fresh').addEventListener('change', e => { cfg.fresh = e.target.checked; cfg.maxAge = cfg.fresh ? 6 : 24; $('#maxAge').value = cfg.maxAge; saveCfg(); recalc(); if ($('#tab-craft') && !$('#tab-craft').hidden && typeof craftRecalc === 'function') craftRecalc(); if (typeof renderFarm === 'function') renderFarm(); });
   $('#go').addEventListener('click', () => { S.lastCompare = false; scan(false); });
   $('#cmpgo').addEventListener('click', () => { S.lastCompare = true; compareCities(false); });
   document.querySelector('.tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) showTab(t.dataset.tab); });
@@ -124,7 +129,7 @@ async function pooled(urls, onRows) {
 }
 function progress(f) { const bar = $('#bar'); bar.hidden = f == null; if (f != null) bar.firstElementChild.style.width = Math.round(f * 100) + '%'; }
 
-async function scan(demo) {
+async function scan(demo, quiet) {
   if (S.busy) return;
   const items = buildItems(cfg); if (!items.length) return;
   S.busy = true; S.error = null; S.histFail = false; updateGo(); progress(0.02);
@@ -154,7 +159,7 @@ async function scan(demo) {
   if (S.scan && S.scan.route !== route) { S.locked.clear(); S.excluded.clear(); }
   S.scan = { key, route, time: now, prices, hist, items, demo: !!demo, src: cfg.src, dst: cfg.dst };
   S.open = null; updateGo(); recalc();
-  if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (quiet) toast('Цены обновлены ' + hhmm(now)); else if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 
@@ -216,7 +221,7 @@ function recalc() {
   S.plan = makePlan(S.cands, c, S.locked, S.excluded);
   renderResult();
 }
-const hhmm = t => new Date(t).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+const hhmm = t => new Date(t).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' });
 
 function errorHTML() {
   const txt = S.error === 'limit' ? 'База цен просит подождать: слишком много запросов за короткое время. Попробуй через минуту.'
@@ -248,7 +253,7 @@ function detailHTML(r, pc) {
     <div><dt>Средняя цена сделок за неделю</dt><dd>${c.avg ? fmt(c.avg) : 'нет данных'}</dd></div>
     <div><dt>Цена закупки записана</dt><dd>${fmtAge(c.ageB)} назад</dd></div>
     <div><dt>Цена сбыта записана</dt><dd>${fmtAge(c.ageS)} назад</dd></div>
-    <div><dt>Вес позиции</dt><dd>${(Math.round(r.weight * 10) / 10).toLocaleString('ru-RU')} кг</dd></div>
+    <div><dt>Вес позиции</dt><dd>${(Math.round(r.weight * 10) / 10).toLocaleString(LOC)} кг</dd></div>
     <div><dt>Доверие к ценам</dt><dd>${Math.round(c.conf * 100)}%</dd></div>
   </dl>`;
   if (r.locked) {
@@ -351,7 +356,7 @@ function spark(pts, now, mark) {
     ${mark ? `<line x1="0" x2="${W}" y1="${my.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#9C3B2B" stroke-dasharray="4 4" stroke-width="1.5"/>` : ''}
     <path d="${line}" fill="none" stroke="#1D2932" stroke-width="2.2" stroke-linejoin="round"/>
     ${pts.map(p => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.p).toFixed(1)}" r="2.6" fill="#1D2932"/>`).join('')}</svg>
-    <div class="sparkcap"><span>${new Date(t0).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span><span>${mark ? '<i class="sw"></i>цена сейчас' : ''}</span><span>${new Date(t1).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span></div>`;
+    <div class="sparkcap"><span>${new Date(t0).toLocaleDateString(LOC, { day: 'numeric', month: 'short' })}</span><span>${mark ? '<i class="sw"></i>цена сейчас' : ''}</span><span>${new Date(t1).toLocaleDateString(LOC, { day: 'numeric', month: 'short' })}</span></div>`;
 }
 function qtyReason(r, pc) {
   const c = r.cand, { cap, lot } = capFor(c, pc), units = buildUnits(c, pc).units.length * lot;
@@ -366,7 +371,7 @@ function qtyReason(r, pc) {
   const t = S.plan.totals, leftB = S.plan.budget - t.cost, leftW = S.plan.weightCap - t.weight;
   const needB = c.buy * lot > leftB, needW = c.item.w * lot > leftW;
   return needB && needW ? 'Больше не влезло: закончились и серебро, и свободный вес. Серебро ушло на позиции с более высокой прибылью.'
-    : needW ? `Больше не влезло по весу: одна штука весит ${c.item.w.toLocaleString('ru-RU')} кг, а свободно ${Math.max(0, Math.round(leftW))} кг.`
+    : needW ? `Больше не влезло по весу: одна штука весит ${c.item.w.toLocaleString(LOC)} кг, а свободно ${Math.max(0, Math.round(leftW))} кг.`
       : 'Больше не влезло по серебру: остаток бюджета ушёл на позиции, которые дают больше прибыли на вложенное серебро.';
 }
 function cardHTML(r, pc) {
@@ -387,7 +392,7 @@ function cardHTML(r, pc) {
     <section class="cs"><h4>Можно ли верить ценам</h4>
       <div class="confbar"><i style="width:${conf}%"></i></div>
       <p>Доверие ${conf}%: ${confTxt}. Цену закупки записали ${fmtAge(c.ageB)} назад, цену сдачи ${fmtAge(c.ageS)} назад. Поэтому в ожидаемой прибыли эта позиция учтена как +${fmt(r.exp)}, а не +${fmt(r.profit)}.</p></section>
-    <section class="cs"><h4>Риск</h4><p>Позиция занимает ${shareOfCargo.toFixed(0)}% вложений груза (${fmt(r.cost)}) и весит ${(Math.round(r.weight * 10) / 10).toLocaleString('ru-RU')} кг. ${sameCity() ? 'Везти через опасные зоны не нужно.' : `Если груз отнимут, потеряешь ${fmt(r.cost)} только на этой позиции.`}</p></section>
+    <section class="cs"><h4>Риск</h4><p>Позиция занимает ${shareOfCargo.toFixed(0)}% вложений груза (${fmt(r.cost)}) и весит ${(Math.round(r.weight * 10) / 10).toLocaleString(LOC)} кг. ${sameCity() ? 'Везти через опасные зоны не нужно.' : `Если груз отнимут, потеряешь ${fmt(r.cost)} только на этой позиции.`}</p></section>
     <div class="acts">${r.locked ? `<button type="button" class="tbtn quiet" data-cact="unlock">Снять отметку «куплено»</button>` : `<button type="button" class="tbtn solid" data-cact="lock">Куплено</button><button type="button" class="tbtn quiet" data-cact="exclude">Вычеркнуть: цена в игре другая</button>`}</div>`;
 }
 function openCard(key) {
@@ -477,7 +482,7 @@ function renderJournal() {
   const total = j.reduce((s, r) => s + r.profit, 0);
   el.innerHTML = `<section class="journal"><h2>Журнал рейсов</h2>
     <div class="jsum"><div><span>Рейсов</span><b>${j.length}</b></div><div><span>Итог</span><b>${fmtShort(total)}</b></div><div><span>В среднем за рейс</span><b>${fmtShort(total / j.length)}</b></div></div>
-    ${j.map((r, i) => `<div class="jrow"><div>${esc(cityName(r.src))} → ${esc(cityName(r.dst))}${r.lost ? ', груз потерян' : ''}${r.demo ? ', демо' : ''}<small>${new Date(r.ts).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, вложено ${fmtShort(r.invested)}, позиций: ${r.n}</small></div>
+    ${j.map((r, i) => `<div class="jrow"><div>${esc(cityName(r.src))} → ${esc(cityName(r.dst))}${r.lost ? ', груз потерян' : ''}${r.demo ? ', демо' : ''}<small>${new Date(r.ts).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, вложено ${fmtShort(r.invested)}, позиций: ${r.n}</small></div>
       <div class="p ${r.profit >= 0 ? 'up' : 'down'}">${r.profit >= 0 ? '+' : '−'}${fmtShort(Math.abs(r.profit))}</div><button type="button" data-del="${i}">Удалить</button></div>`).join('')}
   </section>`;
 }
@@ -509,6 +514,20 @@ function toast(text, actionLabel, action) {
   if (actionLabel) el.querySelector('button').addEventListener('click', () => { el.innerHTML = ''; action(); });
   toastTimer = setTimeout(() => { el.innerHTML = ''; }, actionLabel ? 6000 : 2600);
 }
+
+
+/* ---------- автообновление ---------- */
+const AUTO_MS = 5 * 60 * 1000;
+function autoTick() {
+  if (!cfg.auto || document.hidden) return;
+  const now = Date.now(), tab = (document.querySelector('[data-tab][aria-selected="true"]') || {}).dataset;
+  const t = tab ? tab.tab : 'run';
+  if (t === 'run' && S.scan && !S.scan.demo && !S.busy && now - S.scan.time > AUTO_MS && S.scan.key === scanKey()) { scan(false, true); }
+  if (t === 'craft' && typeof CF !== 'undefined' && CF.scan && !CF.scan.demo && !CF.busy && now - CF.scan.time > AUTO_MS) craftScan(false);
+  if (t === 'farm' && typeof FM !== 'undefined' && FM.scan && !FM.scan.demo && !FM.busy && now - FM.scan.time > AUTO_MS) farmScan(false);
+}
+setInterval(autoTick, 30000);
+document.addEventListener('visibilitychange', autoTick);
 
 /* ---------- запуск ---------- */
 initForm();

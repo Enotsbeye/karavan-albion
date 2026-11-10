@@ -225,6 +225,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
     </div>
     <div class="topctl">
       <select id="server" aria-label="Сервер"></select>
+      <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="uk">UA</option></select>
     </div>
   </header>
 
@@ -270,6 +271,10 @@ details.left ul{padding-left:18px;margin:8px 0 0}
       <div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
       <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div>
 
+      <div class="rowline" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <label class="switch"><input type="checkbox" id="auto"> Обновлять цены каждые 5 минут</label>
+        <label class="switch"><input type="checkbox" id="fresh"> Только свежие цены (до 6 часов)</label>
+      </div>
       <details class="adv">
         <summary>Тонкая настройка</summary>
         <div class="advgrid">
@@ -305,13 +310,16 @@ details.left ul{padding-left:18px;margin:8px 0 0}
     <p>Караван берёт самую дешёвую цену продажи в городе закупки и лучшую цену в городе сбыта, вычитает налог и собирает набор позиций, который даёт максимум прибыли и при этом влезает в твоё серебро и вес. Старые цены часто уже неактуальны, поэтому прибыль умножается на доверие: чем старше цена, тем меньше вклад позиции. Количество ограничено долей дневного объёма продаж, чтобы не везти то, что не продать.</p>
     <p>Это оценка, а не гарантия: перед покупкой сверь цену в игре и вычеркни позицию, если она разошлась. Оставшийся груз пересоберётся сам.</p>
   </details>
-  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере.</p>
+  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере. Чтобы цены по нужным тебе вещам были свежими, запусти <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Data Client</a>: он отправляет в базу цены, которые ты открываешь на рынке в игре.</p>
 </div>
 <div id="modal"></div>
 <div id="toast"></div>
 
 <script>
 /*__CORE__*/
+</script>
+<script>
+/*__I18N__*/
 </script>
 <script>
 /*__UI__*/

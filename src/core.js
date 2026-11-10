@@ -266,7 +266,7 @@ function demoData(items, cfg, now) {
 }
 
 /* Форматирование и разбор чисел */
-const fmt = n => Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ');
+const fmt = n => Math.round(n).toLocaleString(LOC).replace(/ /g, ' ');
 function fmtShort(n) {
   const a = Math.abs(n), s = n < 0 ? '−' : '';
   if (a >= 1e9) return s + (a / 1e9).toFixed(2).replace('.', ',') + ' млрд';
