@@ -75,7 +75,8 @@ function initForm() {
   $('#weight').addEventListener('change', e => { const v = parseFloat(e.target.value); cfg.weight = isFinite(v) && v > 0 ? v : 0; saveCfg(); recalc(); });
   $('#premium').addEventListener('change', e => { cfg.premium = e.target.checked; saveCfg(); recalc(); });
   $('#mode').addEventListener('click', e => { const m = e.target.closest('button'); if (!m) return; cfg.mode = m.dataset.v; setMode(cfg.mode); saveCfg(); recalc(); });
-  $('#go').addEventListener('click', () => scan(false));
+  $('#go').addEventListener('click', () => { S.lastCompare = false; scan(false); });
+  $('#cmpgo').addEventListener('click', () => { S.lastCompare = true; compareCities(false); });
   document.querySelector('.tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) showTab(t.dataset.tab); });
   updateGo();
 }
@@ -85,8 +86,8 @@ function routeChanged(resetRisk) {
   S.locked.clear(); S.excluded.clear(); S.open = null;
   saveCfg(); updateGo(); if (S.scan) renderResult();
 }
-function priceUrls(items) {
-  const host = apiHost(cfg.server), loc = encodeURIComponent(cfg.src) + ',' + encodeURIComponent(cfg.dst), urls = [];
+function priceUrls(items, locs) {
+  const host = apiHost(cfg.server), loc = (locs || [cfg.src, cfg.dst]).map(encodeURIComponent).join(','), urls = [];
   const g = items.filter(i => i.gear).map(i => i.id), r = items.filter(i => !i.gear).map(i => i.id);
   for (const c of chunkIds(g, 3300)) urls.push(`${host}/api/v2/stats/prices/${c.join(',')}.json?locations=${loc}&qualities=1,2,3,4,5`);
   for (const c of chunkIds(r, 3300)) urls.push(`${host}/api/v2/stats/prices/${c.join(',')}.json?locations=${loc}&qualities=1`);
@@ -97,6 +98,7 @@ function updateGo() {
   const go = $('#go');
   go.textContent = S.busy ? 'Проверяю цены…' : !S.scan ? 'Собрать груз' : (S.scan.key !== scanKey() ? 'Собрать груз заново' : 'Обновить цены');
   go.disabled = S.busy || !n;
+  const cg = $('#cmpgo'); if (cg) { cg.disabled = S.busy || !n; cg.textContent = S.busy && S.comparing ? 'Сравниваю города…' : 'Сравнить все города закупки'; }
   $('#gocap').textContent = !n ? 'В выбранных категориях нет предметов с такими тирами и зачарованием'
     : `${fmt(n)} предметов, ${req + 2} запросов к базе цен` + (req > 60 ? `, около ${Math.round(req * 0.4)} секунд` : '');
 }
@@ -153,6 +155,55 @@ async function scan(demo) {
   S.scan = { key, route, time: now, prices, hist, items, demo: !!demo, src: cfg.src, dst: cfg.dst };
   S.open = null; updateGo(); recalc();
   if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+/* ---------- где сейчас выгоднее ---------- */
+const cmpKey = () => JSON.stringify([cfg.server, cfg.dst, [...cfg.cats].sort(), [...cfg.tiers].sort(), [...cfg.enchs].sort()]);
+function riskFor(src) { if (src === 'Caerleon' && cfg.dst === 'Black Market') return 0; const r = ['Caerleon', 'Black Market', 'Brecilien']; return (r.includes(src) || r.includes(cfg.dst)) ? 10 : 1; }
+async function compareCities(demo) {
+  if (S.busy) return;
+  const items = buildItems(cfg); if (!items.length) return;
+  const srcs = CITIES.filter(c => !c.sellOnly && c.id !== cfg.dst).map(c => c.id);
+  S.busy = true; S.comparing = true; S.error = null; updateGo(); progress(0.02);
+  const now = Date.now(), prices = {}, hist = {};
+  try {
+    if (demo) {
+      for (const city of srcs) { const d = demoData(items, Object.assign({}, cfg, { src: city }), now + city.length); indexPrices(d.rows.filter(r => r.city === city), prices); if (city === srcs[0]) { indexPrices(d.rows.filter(r => r.city === cfg.dst), prices); indexHistory(d.hist, hist, now); } }
+    } else {
+      const urls = priceUrls(items, [...srcs, cfg.dst]); let done = 0;
+      await pooled(urls, rows => { indexPrices(rows, prices); progress(0.02 + 0.8 * (++done / urls.length)); });
+      const ids = new Set();
+      for (const city of srcs) computeCandidates(items, prices, Object.assign({}, cfg, { src: city }), now).slice(0, 60).forEach(c => ids.add(c.id));
+      const d0 = new Date(now - 9 * 864e5), date = `${d0.getUTCMonth() + 1}-${d0.getUTCDate()}-${d0.getUTCFullYear()}`, host = apiHost(cfg.server);
+      const gid = [...ids].filter(id => items.find(i => i.id === id).gear), rid = [...ids].filter(id => !gid.includes(id)), hurls = [];
+      for (const c of chunkIds(gid, 3300)) hurls.push(`${host}/api/v2/stats/history/${c.join(',')}.json?locations=${encodeURIComponent(cfg.dst)}&qualities=1,2,3,4,5&time-scale=24&date=${date}`);
+      for (const c of chunkIds(rid, 3300)) hurls.push(`${host}/api/v2/stats/history/${c.join(',')}.json?locations=${encodeURIComponent(cfg.dst)}&qualities=1&time-scale=24&date=${date}`);
+      try { let hd = 0; await pooled(hurls, rows => { indexHistory(rows, hist, now); progress(0.82 + 0.18 * (++hd / hurls.length)); }); } catch (e) { S.histFail = true; }
+    }
+  } catch (e) { S.error = e.status === 429 ? 'limit' : (e.status ? 'http' + e.status : 'net'); S.busy = false; S.comparing = false; progress(null); updateGo(); return renderResult(); }
+  const rows = srcs.map(city => {
+    const c = Object.assign({}, cfg, { src: city }), cands = computeCandidates(items, prices, c, now); applyHistory(cands, hist);
+    const plan = makePlan(cands, c, new Map(), new Set()), g = riskFor(city), rm = riskMath(plan.totals, g, cfg.minutes);
+    return { city, t: plan.totals, n: plan.rows.length, top: plan.rows[0] ? plan.rows[0].cand.item.name + ' ' + tierLabel(plan.rows[0].cand.item) : '', gank: g, ev: rm.ev };
+  }).sort((a, b) => b.ev - a.ev);
+  S.compare = { key: cmpKey(), time: now, rows, prices, hist, items, demo: !!demo };
+  S.busy = false; S.comparing = false; progress(null);
+  if (rows[0] && rows[0].n) pickCity(rows[0].city); else { updateGo(); renderResult(); }
+}
+function pickCity(city) {
+  const C = S.compare; cfg.src = city; $('#src').value = city; Object.assign(cfg, routeDefaults()); saveCfg();
+  S.locked.clear(); S.excluded.clear(); S.open = null;
+  S.scan = { key: scanKey(), route: routeKey(), time: C.time, prices: C.prices, hist: C.hist, items: C.items, demo: C.demo, src: city, dst: cfg.dst };
+  updateGo(); recalc();
+}
+function compareHTML() {
+  const C = S.compare; if (!C || C.key !== cmpKey()) return '';
+  return `<div class="sheet" style="margin-bottom:16px"><div class="sheethead"><h2>Где сейчас выгоднее</h2><span>сдать в ${esc(cityName(cfg.dst))}, цены в ${hhmm(C.time)}</span></div>
+    <table class="cmp"><thead><tr><th>Купить в</th><th>Прибыль</th><th>С учётом риска</th><th>Вложить</th></tr></thead><tbody>
+    ${C.rows.map(r => `<tr class="${r.city === cfg.src && S.scan && S.scan.src === r.city ? 'sel' : ''}"><td><button type="button" data-act="pick" data-city="${esc(r.city)}">${esc(cityName(r.city))}</button><small>${r.n ? esc(r.top) + (r.n > 1 ? ' и ещё ' + (r.n - 1) : '') : 'ничего выгодного'}</small></td>
+      <td>${r.n ? fmtShort(r.t.exp) : '—'}</td><td class="${r.ev >= 0 ? 'pos' : 'negc'}">${r.n ? (r.ev >= 0 ? '' : '−') + fmtShort(Math.abs(r.ev)) : '—'}<small>риск ${r.gank}%</small></td><td>${r.n ? fmtShort(r.t.cost) : '—'}</td></tr>`).join('')}
+    </tbody></table><p class="imeta" style="margin-top:8px">Риск по умолчанию: 10% через красные и чёрные зоны, 1% между королевскими городами. Нажми на город, чтобы открыть его накладную.</p></div>`;
 }
 
 /* ---------- расчёт и вывод ---------- */
@@ -242,7 +293,8 @@ function updateRisk() { const el = $('#riskfacts'); if (el && S.plan) el.innerHT
 function renderResult() {
   const el = $('#result'); let h = '';
   if (S.error) h += errorHTML();
-  if (!S.scan) { el.innerHTML = h + emptyHTML(); return; }
+  h += compareHTML();
+  if (!S.scan) { el.innerHTML = h + (S.compare && S.compare.key === cmpKey() ? '' : emptyHTML()); return; }
   const pc = planCfg(), p = S.plan, t = p.totals;
   if (S.scan.demo) h += `<div class="note warn">Демо: все цены ниже выдуманы, чтобы показать, как выглядит накладная. Настоящие цены загрузятся, когда файл открыт в браузере с интернетом.</div>`;
   if (S.scan.key !== scanKey()) h += `<div class="note warn">Ты поменял маршрут или набор товаров. Накладная ниже собрана по прежним условиям, нажми «Собрать груз заново».</div>`;
@@ -293,7 +345,8 @@ function onResultClick(e) {
   const a = e.target.closest('[data-act]'); if (!a) return;
   const act = a.dataset.act, itemEl = a.closest('.item'), key = itemEl && itemEl.dataset.key, r = key && rowByKey(key);
   if (act === 'retry') return scan(false);
-  if (act === 'demo') return scan(true);
+  if (act === 'demo') return S.lastCompare ? compareCities(true) : scan(true);
+  if (act === 'pick') return pickCity(a.dataset.city);
   if (act === 'open') { S.open = S.open === key ? null : key; return renderResult(); }
   if (act === 'lock' || act === 'lockbtn' || act === 'unlock') {
     if (!r) return;

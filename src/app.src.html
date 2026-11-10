@@ -180,6 +180,17 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 .dlgacts .pri{background:var(--amber);border-color:var(--amber);color:var(--amber-ink)}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--bone);color:var(--ink);border-radius:10px;padding:10px 14px;font-size:14px;font-weight:500;z-index:30;display:flex;gap:12px;align-items:center;max-width:calc(100vw - 28px)}
 .toast button{border:0;background:transparent;color:var(--seal);font-weight:700;padding:0}
+.pin{background:var(--paper2)!important;border:1px solid var(--rule)!important;color:var(--pink)!important}
+.go2{width:100%;margin-top:8px;border:1px solid var(--amber);background:transparent;color:var(--amber);border-radius:12px;padding:11px;font-weight:600;font-size:15px}
+.go2:disabled{opacity:.55;cursor:progress}
+.cmp{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+.cmp th{font-weight:500;color:var(--pmute);font-size:12px;text-align:right;padding:6px 6px;border-bottom:1px solid var(--rule)}
+.cmp th:first-child,.cmp td:first-child{text-align:left}
+.cmp td{padding:9px 6px;border-bottom:1px dashed var(--rule);text-align:right;white-space:nowrap}
+.cmp tr.sel td{background:var(--paper2)}
+.cmp tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--seal)}
+.cmp button{background:none;border:0;padding:0;font-weight:600;color:var(--pink);text-align:left}
+.cmp small{display:block;color:var(--pmute);font-size:12px;font-weight:400;white-space:normal}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -256,6 +267,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
       </details>
 
       <button class="go" id="go" type="button">Собрать груз</button>
+      <button class="go2" id="cmpgo" type="button">Сравнить все города закупки</button>
       <div class="gocap" id="gocap"></div>
       <div class="bar" id="bar" hidden><i></i></div>
     </section>

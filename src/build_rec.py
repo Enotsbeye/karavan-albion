@@ -37,3 +37,43 @@ db['rec']=rec
 json.dump(db,open('db.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
 print('recipes',len(rec),'skipped',len(bad),bad[:40],file=sys.stderr)
 print({k:rec[k] for k in ['MAIN_SWORD','2H_CLAYMORE_AVALON','BAG','ARMOR_PLATE_SET1','OFF_SHIELD','CAPE'] if k in rec},file=sys.stderr)
+# --- фокус и переработка ---
+names={}
+for x in json.load(open('/home/claude/dl/items_formatted.json')):
+    ln=x.get('LocalizedNames') or {}; names[x['UniqueName']]=ln.get('RU-RU') or ln.get('EN-US') or x['UniqueName']
+def focus_of(x,e):
+    if e==0: cr=x.get('craftingrequirements')
+    else:
+        en=x.get('enchantments',{}).get('enchantment',[]); en=en if isinstance(en,list) else [en]
+        m=[q for q in en if q.get('@enchantmentlevel')==str(e)]
+        if not m: return None
+        cr=m[0].get('craftingrequirements')
+    if isinstance(cr,list): cr=cr[0]
+    return float(cr.get('@craftingfocus',0)) if cr else None
+F={}; badf=0
+for suf in rec:
+    x4=by.get(f'T4_{suf}'); f0=focus_of(x4,0)
+    ok=f0 and f0>0
+    if ok:
+        for t in range(4,9):
+            for e in range(0,4):
+                x=by.get(f'T{t}_{suf}'); f=focus_of(x,e) if x else None
+                if f is None: continue
+                if abs(f-f0*1.75**(t-4+e))>max(3,f*0.01): ok=False
+    if ok: F[suf]=f0
+    else: badf+=1
+db['focus']=F
+api=lambda u: u+('@'+re.search(r'_LEVEL(\d)$',u).group(1) if re.search(r'_LEVEL(\d)$',u) else '')
+si={x['@uniquename']:x for x in raw['simpleitem']}
+ref=[]
+for kind in ['METALBAR','PLANKS','CLOTH','LEATHER','STONEBLOCK']:
+    for t in range(4,9):
+        for e in range(0,5):
+            u=f'T{t}_{kind}'+(f'_LEVEL{e}' if e else ''); x=si.get(u)
+            if not x: continue
+            cr=x['craftingrequirements']; cr=cr[0] if isinstance(cr,list) else cr
+            rs=cr['craftresource']; rs=rs if isinstance(rs,list) else [rs]
+            ref.append([api(u),names.get(u.split('@')[0],u),t,e,float(cr['@craftingfocus']),[[api(r['@uniquename']),int(r['@count'])] for r in rs]])
+db['refine']=ref
+json.dump(db,open('db.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+print('focus bases',len(F),'bad',badf,'refine',len(ref),ref[0],ref[7],file=sys.stderr)
