@@ -15,7 +15,7 @@ function farmIds() {
   return [...s];
 }
 function farmCalc(P, c, now) {
-  const tax = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, setup = cfg.setupFee / 100, city = c.city;
+  const tax = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, setup = cfg.setupFee / 100, city = c.city, prem = cfg.premium ? 1 : 0.5;
   const get = id => { const d = P[id] && P[id][city] && P[id][city][1]; return d || null; };
   const fresh = (d, k) => d && d[k] > 0 && ageH(d[k + '_date'], now) <= cfg.maxAge;
   const market = id => { const d = get(id); return fresh(d, 'sell_price_min') ? d.sell_price_min : null; };
@@ -40,12 +40,12 @@ function farmCalc(P, c, now) {
     const ps = buy(p.seed), cs = sell(p.crop); if (ps == null || cs == null) continue;
     const seedSell = sell(p.seed) || ps * 0.85, days = Math.max(1, Math.ceil(p.days));
     /* Семена: вернувшееся семя сажаешь снова, а всё, что сверх одного, продаёшь */
-    const econ = foc => { const seeds = p.sc + (foc ? p.fb : 0), crop = p.y * c.mult * cs, buySeed = seeds < 1 ? ps * (1 - seeds) : 0, sellSeed = seeds > 1 ? (seeds - 1) * seedSell : 0; return { seeds, crop, buySeed, sellSeed, day: (crop - buySeed + sellSeed) / days }; };
+    const econ = foc => { const seeds = p.sc + (foc ? p.fb : 0), crop = p.y * c.mult * prem * cs, buySeed = seeds < 1 ? ps * (1 - seeds) : 0, sellSeed = seeds > 1 ? (seeds - 1) * seedSell : 0; return { seeds, crop, buySeed, sellSeed, day: (crop - buySeed + sellSeed) / days }; };
     const calc = foc => econ(foc).day;
     const pn = calc(false), pf = calc(true);
     const en = econ(false), ef = econ(true), seedTxt = e => e.seeds >= 1 ? `семя вернётся${e.seeds > 1 ? `, лишних ${(e.seeds - 1).toFixed(2).replace('.', ',')} шт. на продажу +${fmt(e.sellSeed)}` : ''}` : `семя вернётся в ${Math.round(e.seeds * 100)}% случаев, докупка ${fmt(e.buySeed)}`;
     rows.push({ kind: p.kind, name: p.name, t: p.t, id: p.crop, icon: p.seed, perDay: pn, pn, pf, focus: p.fc, fday: p.fc / days, invest: ps,
-      note: `урожай ~${(p.y * c.mult).toFixed(1).replace('.', ',')} шт. по ${fmt(cs)} = ${fmt(en.crop)}, ${seedTxt(en)}`, fnote: p.fc ? `с поливом: ${seedTxt(ef)}` : '', vol: vol(p.crop) });
+      note: `урожай ~${(p.y * c.mult * prem).toFixed(1).replace('.', ',')} шт. по ${fmt(cs)} = ${fmt(en.crop)}, ${seedTxt(en)}`, fnote: p.fc ? `с поливом: ${seedTxt(ef)}` : '', vol: vol(p.crop) });
   }
   for (const a of DB.farm.animals) {
     const pb = buy(a.baby); if (pb == null) continue;
@@ -61,8 +61,8 @@ function farmCalc(P, c, now) {
     if (a.prod) {
       const ps = sell(a.prod), pf2 = foodCost(a.cat, a.fav, a.favb);
       if (ps != null && pf2) {
-        const v = a.py * c.mult * ps - a.pnutr * pf2.per;
-        rows.push({ kind: a.kind, name: a.name + ': ' + a.pname.toLowerCase(), t: a.t, id: a.prod, icon: a.grown, perDay: v, pn: v, pf: v, focus: 0, fday: 0, invest: pb, note: `~${(a.py * c.mult).toFixed(0)} шт. в день по ${fmt(ps)}, корм ${fmt(a.pnutr * pf2.per)} в день`, vol: vol(a.prod), product: true });
+        const v = a.py * c.mult * prem * ps - a.pnutr * pf2.per;
+        rows.push({ kind: a.kind, name: a.name + ': ' + a.pname.toLowerCase(), t: a.t, id: a.prod, icon: a.grown, perDay: v, pn: v, pf: v, focus: 0, fday: 0, invest: pb, note: `~${(a.py * c.mult * prem).toFixed(0)} шт. в день по ${fmt(ps)}, корм ${fmt(a.pnutr * pf2.per)} в день`, vol: vol(a.prod), product: true });
       }
     }
   }
@@ -102,12 +102,13 @@ function farmSetupHTML() {
     <div class="two fld">${num('fFarm', 'Полей', c.farm, 0, 30)}${num('fHerb', 'Садов трав', c.herb, 0, 30)}</div>
     <div class="two fld">${num('fPasture', 'Пастбищ', c.pasture, 0, 30)}${num('fKennel', 'Питомников', c.kennel, 0, 30)}</div>
     <div class="two fld">${num('fSlots', 'Мест на одном участке', c.slots, 1, 20)}${num('fMult', 'Множитель урожая', c.mult, 0.1, 5, 0.1)}</div>
-    <div class="hint" style="margin-top:-6px;margin-bottom:12px">Множитель — если в игре урожай или продукт другой, чем в расчёте, поставь, например, 0,5 или 2.</div>
+    <div class="hint" style="margin-top:-6px;margin-bottom:12px">Без премиума урожай и продукты животных считаются вдвое меньше, а налог с продажи выше. Если в игре цифры другие, поправь множитель.</div>
     <span class="lbl">Сколько участков поливать или кормить с фокусом</span>
     <div class="two fld">${num('fwFarm', 'Полей с фокусом', Math.min(c.wFarm || 0, c.farm), 0, c.farm)}${num('fwHerb', 'Садов с фокусом', Math.min(c.wHerb || 0, c.herb), 0, c.herb)}</div>
     <div class="two fld">${num('fwPasture', 'Пастбищ с фокусом', Math.min(c.wPasture || 0, c.pasture), 0, c.pasture)}${num('fwKennel', 'Питомников с фокусом', Math.min(c.wKennel || 0, c.kennel), 0, c.kennel)}</div>
     <div class="fld">${num('fDisc', 'Скидка фокуса от мастерства, %', c.fdisc || 0, 0, 90, 1)}<div class="hint">Посмотри в игре, сколько фокуса стоит полить одну грядку, и подбери скидку, чтобы расход совпал.</div></div>
     <div class="rowline" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <label class="switch"><input type="checkbox" id="fPrem" ${cfg.premium ? 'checked' : ''}> Премиум-статус</label>
 
       <label class="switch"><input type="checkbox" id="fOwn" ${c.ownFood ? 'checked' : ''}> Кормить своим урожаем</label>
       <label class="switch"><input type="checkbox" id="fBuyO" ${c.buyOrder ? 'checked' : ''}> Покупать семена и детёнышей через свой ордер</label></div>
@@ -137,6 +138,7 @@ function farmResultHTML() {
     if (w && bestF && bestF.pf > 0) parts.push(`${w} с фокусом — ${bestF.name} T${bestF.t}`);
     if (parts.length) plan.push(`${FKIND[k]} ×${n}: ${parts.join('; ')}, +${fmtShort(vN + vF)} в день`);
   }
+  FM.summary = { total, plan };
   h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
     <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${focusUsed ? ` Фокуса нужно около ${fmt(focusUsed)} в день.` : ''}</small></div>
     <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Укажи кнопками + слева, сколько у тебя полей, садов, пастбищ и питомников, и план соберётся.'}</div></div>`;
@@ -168,6 +170,7 @@ $('#tab-farm').addEventListener('keydown', e => { if (e.key === 'Enter' && FMAP[
 $('#tab-farm').addEventListener('change', e => {
   const t = e.target, c = FM.cfg;
   if (FMAP[t.id]) { const v = parseFloat(String(t.value).replace(',', '.')); if (isFinite(v) && v >= 0) return farmSetNum(t, v); return renderFarm(); }
+  else if (t.id === 'fPrem') { cfg.premium = t.checked; saveCfg(); const p = $('#premium'); if (p) p.checked = cfg.premium; }
   else if (t.id === 'fOwn') c.ownFood = t.checked;
   else if (t.id === 'fBuyO') c.buyOrder = t.checked;
   else if (t.id === 'fCity') { c.city = t.value; FM.scan = null; }

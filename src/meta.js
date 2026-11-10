@@ -95,7 +95,7 @@ function renderMeta() {
   const c = MT.cfg, d = MT.data, age = d ? Date.now() - d.time : Infinity;
   const setup = `<section class="setup"><h2>Мета-сеты</h2>
     <p class="imeta" style="margin:0 0 12px;color:var(--mute)">Сводка по последним убийствам с официального киллборда: какие сеты чаще всего убивают и сколько стоит собрать такой сет.</p>
-    ${MT.err ? `<div class="note err">${MT.err === 'empty' ? 'Киллборд вернул пустой ответ, попробуй позже.' : 'Не получилось загрузить киллборд. Браузер может не пускать запросы к нему напрямую: запусти KaravanMeter.exe, и Караван пойдёт через него.'}</div>` : ''}
+    ${MT.err ? `<div class="note err">${MT.err === 'empty' ? 'Киллборд вернул пустой ответ, попробуй позже.' : 'Не получилось загрузить свежий киллборд напрямую. Ниже — последняя сводка с сайта Каравана, она обновляется раз в сутки.'}</div>` : ''}
     ${d ? `<div class="note ${age > DAY ? 'warn' : 'ok'}">Сводка от ${new Date(d.time).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, убийств: ${fmt(d.events)}.${age > DAY ? ' Сводка старше суток.' : ''}</div>` : ''}
     <div class="fld"><label for="mtGroup">Какие бои</label><select id="mtGroup">${MGROUP.map(([k, n]) => `<option value="${k}" ${c.group === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     <div class="two fld"><div><label for="mtTier">Собрать в тире</label><select id="mtTier">${[4, 5, 6, 7, 8].map(t => `<option value="${t}" ${c.tier === t ? 'selected' : ''}>T${t}</option>`).join('')}</select></div>
@@ -105,7 +105,7 @@ function renderMeta() {
     <div class="two fld"><div><label for="mtKills">Сколько убийств брать</label><select id="mtKills">${[500, 1000, 2000].map(n => `<option value="${n}" ${c.kills === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div><label for="mtSort">Сортировать</label><select id="mtSort"><option value="kills" ${c.sort === 'kills' ? 'selected' : ''}>По убийствам</option><option value="wr" ${c.sort === 'wr' ? 'selected' : ''}>По доле побед</option><option value="price" ${c.sort === 'price' ? 'selected' : ''}>По цене</option></select></div></div>
     <button class="go" type="button" data-mt="refresh" ${MT.busy ? 'disabled' : ''}>${MT.busy ? 'Загружаю киллборд…' : d ? 'Обновить сводку' : 'Собрать сводку'}</button>
-    <div class="gocap">Сводка обновляется сама раз в сутки, когда открываешь эту вкладку</div>
+    <div class="gocap">Сводку раз в сутки собирает сайт Каравана, скачивать ничего не нужно</div>
     <div class="bar" id="mtbar" hidden><i></i></div></section>`;
   let right;
   if (!d) right = `<div class="empty"><h2>Что сейчас в мете?</h2><ol><li>Нажми «Собрать сводку»: Караван загрузит последние убийства с киллборда.</li><li>Выбери тир и бюджет: Караван посчитает цену каждого сета на рынке.</li><li>Сводка будет обновляться раз в сутки.</li></ol></div>`;
@@ -125,7 +125,23 @@ function renderMeta() {
   }
   el.innerHTML = setup + `<section aria-live="off">${right}</section>`;
 }
-function metaOpen() { renderMeta(); if (!MT.busy && (!MT.data || Date.now() - MT.data.time > DAY || MT.data.server !== cfg.server)) metaRefresh(); else metaPrice().then(renderMeta); }
+const SITE = 'https://enotsbeye.github.io/karavan-albion/';
+/* Готовая сводка, которую раз в сутки собирает GitHub: работает с телефона, без счётчика */
+async function metaFromSite() {
+  try {
+    const r = await fetch(SITE + 'data/meta-' + cfg.server + '.json?t=' + Math.floor(Date.now() / 6e5), { cache: 'no-store' });
+    if (!r.ok) return false;
+    const d = await r.json();
+    if (d && d.builds && (!MT.data || MT.data.server !== cfg.server || d.time > MT.data.time)) { MT.data = d; LS.set('karavan.meta', d); MT.prices = {}; return true; }
+  } catch (e) { }
+  return false;
+}
+async function metaOpen() {
+  renderMeta();
+  if (!MT.busy && (!MT.data || Date.now() - MT.data.time > 6 * 3600e3 || MT.data.server !== cfg.server)) await metaFromSite();
+  renderMeta();
+  if (!MT.busy && (!MT.data || Date.now() - MT.data.time > DAY || MT.data.server !== cfg.server)) metaRefresh(); else metaPrice().then(renderMeta);
+}
 $('#tab-meta').addEventListener('click', e => { const b = e.target.closest('[data-mt]'); if (b && b.dataset.mt === 'refresh') metaRefresh(); });
 $('#tab-meta').addEventListener('change', async e => {
   const t = e.target, c = MT.cfg;

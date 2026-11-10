@@ -159,7 +159,7 @@ async function scan(demo, quiet) {
   if (S.scan && S.scan.route !== route) { S.locked.clear(); S.excluded.clear(); }
   S.scan = { key, route, time: now, prices, hist, items, demo: !!demo, src: cfg.src, dst: cfg.dst };
   S.open = null; updateGo(); recalc();
-  if (!demo && !sameCity()) activityRefresh();
+  if (!demo && !sameCity()) { activityRefresh(); if (!ACT.remote || !ACT.remote[cfg.server]) activityFromSite(); }
   if (quiet) toast('Цены обновлены ' + hhmm(now)); else if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -243,8 +243,15 @@ async function activityRefresh() {
   ACT.busy = false;
   if (S.scan) recalc();
 }
+async function activityFromSite() {
+  try {
+    const r = await fetch('https://enotsbeye.github.io/karavan-albion/data/activity-' + cfg.server + '.json?t=' + Math.floor(Date.now() / 6e5), { cache: 'no-store' });
+    if (r.ok) { ACT.remote = ACT.remote || {}; ACT.remote[cfg.server] = (await r.json()).map(x => Object.assign({ server: cfg.server }, x)); if (S.scan) recalc(); }
+  } catch (e) { }
+}
 function activityNow() {
-  const store = LS.get('karavan.activity', []).filter(x => x.server === cfg.server), last = store.slice(-1)[0];
+  const local = LS.get('karavan.activity', []).filter(x => x.server === cfg.server), remote = (ACT.remote && ACT.remote[cfg.server]) || [];
+  const store = local.concat(remote).sort((a, b) => a.ts - b.ts), last = store.slice(-1)[0];
   if (!last || Date.now() - last.ts > 60 * 60000) return null;
   const same = store.filter(x => x !== last && x.hour === last.hour).map(x => x.rate).sort((a, b) => a - b);
   const all = store.filter(x => x !== last).map(x => x.rate).sort((a, b) => a - b);
@@ -408,9 +415,9 @@ function spark(pts, now, mark) {
   const line = pts.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.p).toFixed(1)).join(' ');
   const my = mark ? y(mark) : null;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Средняя цена сделок по дням">
-    ${mark ? `<line x1="0" x2="${W}" y1="${my.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#9C3B2B" stroke-dasharray="4 4" stroke-width="1.5"/>` : ''}
-    <path d="${line}" fill="none" stroke="#1D2932" stroke-width="2.2" stroke-linejoin="round"/>
-    ${pts.map(p => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.p).toFixed(1)}" r="2.6" fill="#1D2932"/>`).join('')}</svg>
+    ${mark ? `<line x1="0" x2="${W}" y1="${my.toFixed(1)}" y2="${my.toFixed(1)}" stroke="currentColor" stroke-dasharray="4 4" stroke-width="1.5"/>` : ''}
+    <path d="${line}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    ${pts.map(p => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.p).toFixed(1)}" r="2.6" fill="currentColor"/>`).join('')}</svg>
     <div class="sparkcap"><span>${new Date(t0).toLocaleDateString(LOC, { day: 'numeric', month: 'short' })}</span><span>${mark ? '<i class="sw"></i>цена сейчас' : ''}</span><span>${new Date(t1).toLocaleDateString(LOC, { day: 'numeric', month: 'short' })}</span></div>`;
 }
 function qtyReason(r, pc) {
@@ -551,9 +558,11 @@ function onJournalClick(e) {
 }
 function showTab(tab) {
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-  $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta';
+  $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta';
   $('.how').hidden = tab !== 'run';
+  if (tab === 'home') { renderHome(); homeFetch(); }
   if (tab === 'journal') renderJournal();
+  window.scrollTo(0, 0);
   if (tab === 'craft') renderCraft();
   if (tab === 'farm') renderFarm();
   if (tab === 'group') { renderGroup(); gmStart(); } else if (typeof gmStop === 'function') gmStop();

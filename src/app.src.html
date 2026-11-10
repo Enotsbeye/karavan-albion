@@ -6,7 +6,7 @@
 <title>Караван — планировщик груза для Albion Online</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Yeseva+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#14222C; --panel:#1B2E3A; --panel2:#233A49; --line:#34505F; --bone:#ECE6D8; --mute:#94A8B4;
@@ -235,6 +235,82 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 .stepper{display:grid;grid-template-columns:40px 1fr 40px;gap:6px}
 .stepper button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;font-size:20px;line-height:1;height:40px;color:var(--bone)}
 .stepper input{text-align:center;font-weight:600}
+/* ===== тёмный минимализм ===== */
+:root{--ink:#0B0C0E;--panel:#131519;--panel2:#1A1D22;--line:#24272E;--bone:#E8E9EC;--mute:#858B95;--amber:#F2B43C;--amber-ink:#1A1203;--green:#4FD08A;--red:#F0705F;--paper:#131519;--paper2:#1A1D22;--rule:#262A31;--pink:#E8E9EC;--pmute:#858B95;--pgreen:#4FD08A;--pred:#F0705F;--seal:#F2B43C;--display:var(--body)}
+body{font-size:14.5px}
+h1,h2,h3,h4{font-weight:650!important;letter-spacing:-.01em}
+.wrap{max-width:1360px;padding:0}
+.brand h1{font-size:20px;line-height:1.2;margin:0}
+.tabs{margin:0;flex-wrap:nowrap}
+.tabs button{display:flex;align-items:center;gap:10px;border:0;background:transparent;color:var(--mute);padding:8px 10px;border-radius:8px;font-weight:500;font-size:14px;text-align:left;width:100%}
+.tabs button[aria-selected="true"]{background:var(--panel2);color:var(--bone)}
+.tabs button[aria-selected="true"] svg{color:var(--amber)}
+.tabs svg{width:18px;height:18px;flex:none}
+.side select{padding:7px 28px 7px 10px;font-size:13px}
+@media(min-width:900px){
+  .wrap{display:grid;grid-template-columns:196px minmax(0,1fr)}
+  .side{position:sticky;top:0;height:100vh;border-right:1px solid var(--line);padding:18px 10px 14px;display:flex;flex-direction:column;gap:16px}
+  .brand{padding:0 10px}
+  .tabs{display:flex;flex-direction:column;gap:2px}
+  .sidectl{margin-top:auto;display:grid;gap:8px}.sidectl select{width:100%}
+  .content{padding:20px 22px 40px;min-width:0}
+  .imain{display:grid!important;grid-template-columns:minmax(150px,1.1fr) 1.6fr 1fr;gap:12px;align-items:center}.imain .imeta{margin:0}
+}
+@media(max-width:899px){
+  .side{padding:12px 14px 0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .sidectl{display:flex;gap:6px}
+  .content{padding:12px 14px 90px}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;overflow-x:auto;background:var(--panel);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+  .tabs button{flex-direction:column;gap:2px;font-size:10.5px;min-width:60px;width:auto;flex:1;padding:6px 2px;align-items:center}
+  .toast{bottom:78px}
+}
+@media(min-width:980px){.grid{grid-template-columns:1fr}.setup{position:static;max-height:none;overflow:visible}}
+@media(min-width:1180px){.grid{grid-template-columns:340px minmax(0,1fr)}.setup{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}}
+.setup,.journal,.empty,.dlg,.card,.sheet{border-radius:10px}
+.setup{padding:14px}
+.setup h2,.sheet h2,.journal h2,.empty h2,.pagetitle{font-size:17px!important;margin:0 0 10px}
+.sheet{border:1px solid var(--line);box-shadow:none;padding:14px}
+.sheet::before,.card::before{display:none}
+.card{border:1px solid var(--line);padding:16px}
+.sheethead h2{font-size:17px!important}
+.big b{font-size:30px;font-weight:700}
+.cardprofit{font-size:24px;font-weight:700}
+.cardtop h3{font-size:18px}
+.riskbig b{font-size:26px;font-weight:700}
+.jsum b{font-size:19px;font-weight:700}
+.cs h4,.risk h3,.list h3{font-size:14px}
+input[type=text],input[type=number]{padding:7px 10px;border-radius:8px}
+select{border-radius:8px;padding:7px 28px 7px 10px}
+.go{padding:10px;font-size:15px;border-radius:8px}.go2,.tbtn2{border-radius:8px;padding:9px;font-size:14px}
+.chip{padding:4px 9px;font-size:13px;border-radius:6px}
+.tbtn{border-color:var(--line);border-radius:8px;padding:7px 12px}
+.tbtn.solid{background:var(--amber);border-color:var(--amber);color:var(--amber-ink)}
+.chk{width:20px;height:20px;border-width:1.5px;border-color:var(--mute)}
+.chk:checked::after{border-color:var(--amber-ink);width:10px;height:5px;border-width:2px}
+.irow{padding:6px 0;gap:9px}
+.ic{width:34px;height:34px;font-size:11px;border-radius:6px}
+.ic.big{width:64px;height:64px}
+.iname{font-size:14px}.imeta{font-size:12px;margin-top:1px}
+.iprofit b{font-size:14px}.iprofit span{font-size:12px}
+.item{border-bottom:1px solid var(--rule)}
+.gauge .gt{height:8px;border-radius:99px}.gauge .gt i,.mbar i.d{background:var(--amber)}
+.flags span{background:#3A1D18;color:#F5B1A6}
+.gslot{width:38px;height:48px}.gslot img{width:34px;height:34px}
+.spark path{stroke:var(--bone)}.spark circle{fill:var(--bone)}.spark line{stroke:var(--amber)}
+.toast{background:var(--panel2);color:var(--bone);border:1px solid var(--line)}.toast button{color:var(--amber)}
+.dot.g{background:var(--green)}.dot.a{background:var(--amber)}.dot.r{background:var(--red)}
+.x{border-color:var(--line)}
+.how{margin-top:16px}
+.home{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.hc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:5px;min-height:150px}
+.hc h3{margin:0;font-size:13px;color:var(--mute);font-weight:500!important}
+.hc .n{font-size:24px;font-weight:700;line-height:1.2}
+.hc .n.pos{color:var(--green)}.hc .n.negc{color:var(--red)}
+.hc p{margin:0;font-size:13px;color:var(--mute)}
+.hc button{margin-top:auto;align-self:flex-start;border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600}
+.hc button:hover{border-color:var(--amber)}
+.side .brand h1{font-size:20px!important;line-height:1.2}
+@media(max-width:899px){.tabs button{min-width:0;font-size:10px;padding:6px 0}.tabs svg{width:20px;height:20px}}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -242,28 +318,17 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <h1>Караван</h1>
-      <p>Собирает самый выгодный груз под твоё серебро и вес</p>
-    </div>
-    <div class="topctl">
+  <aside class="side">
+    <div class="brand"><h1>Караван</h1></div>
+    <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
+    <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
       <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="uk">UA</option></select>
     </div>
-  </header>
-
-  <div class="seg tabs" role="tablist">
-    <button role="tab" data-tab="run" aria-selected="true">Рейс</button>
-    <button role="tab" data-tab="journal" aria-selected="false">Журнал</button>
-    <button role="tab" data-tab="craft" aria-selected="false">Крафт</button>
-    <button role="tab" data-tab="farm" aria-selected="false">Остров</button>
-    <button role="tab" data-tab="group" aria-selected="false">Группа</button>
-    <button role="tab" data-tab="maps" aria-selected="false">Карты</button>
-    <button role="tab" data-tab="meta" aria-selected="false">Мета</button>
-  </div>
-
-  <main id="tab-run" class="grid">
+  </aside>
+  <div class="content">
+  <main id="tab-home"></main>
+  <main id="tab-run" class="grid" hidden>
     <section class="setup" aria-label="Условия рейса">
       <h2>Условия рейса</h2>
       <div class="fld">
@@ -341,6 +406,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
     <p>Это оценка, а не гарантия: перед покупкой сверь цену в игре и вычеркни позицию, если она разошлась. Оставшийся груз пересоберётся сам.</p>
   </details>
   <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере. Чтобы цены по нужным тебе вещам были свежими, запусти <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Data Client</a>: он отправляет в базу цены, которые ты открываешь на рынке в игре.</p>
+  </div>
 </div>
 <div id="modal"></div>
 <div id="toast"></div>
@@ -368,6 +434,9 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 </script>
 <script>
 /*__META__*/
+</script>
+<script>
+/*__HOME__*/
 </script>
 </body>
 </html>
