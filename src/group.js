@@ -1,7 +1,7 @@
 "use strict";
 /* ===== Караван: урон группы (данные от KaravanMeter.exe) ===== */
 const GM = { url: 'http://127.0.0.1:48713', data: null, err: null, view: 'current', timer: 0, lastOk: 0 };
-const SLOT = ['Оружие', 'Левая рука', 'Шлем', 'Броня', 'Обувь', 'Сумка', 'Плащ', 'Маунт', 'Зелье', 'Еда'];
+const SLOT = ['Оружие', 'Л. рука', 'Шлем', 'Броня', 'Обувь', 'Сумка', 'Плащ', 'Маунт', 'Зелье', 'Еда'];
 const HEAL_WEAPONS = /(HOLYSTAFF|NATURESTAFF)/;
 const GEAR_NAME = (() => { const m = {}; for (const g of DB.gear) m[g[0]] = g[1]; return m; })();
 
@@ -79,8 +79,7 @@ function setupGroupHTML() {
   const party = (d && d.party) || [];
   return `<section class="setup"><h2>Группа</h2>${status}
     ${party.length ? `<div class="chipgroup"><span class="lbl">Пати</span>${party.map(p => `<div class="pmem"><b>${esc(p.name)}</b>${p.seen ? '' : ' <span class="imeta">не рядом</span>'}${p.seen ? gearHTML(p.equip) : ''}</div>`).join('')}</div>` : ''}
-    <div class="acts"><button type="button" class="tbtn2" data-g="reset" ${GM.err ? 'disabled' : ''}>Начать новый бой</button><button type="button" class="tbtn2" data-g="clear" ${GM.err ? 'disabled' : ''}>Очистить историю</button></div>
-    <p class="imeta" style="margin-top:12px">Счётчик только читает сетевые пакеты игры, ничего в неё не отправляет. Бой заканчивается сам, если 20 секунд никто из пати не бьёт и не лечит.</p></section>`;
+    <div class="acts"><button type="button" class="tbtn2" data-g="reset" ${GM.err ? 'disabled' : ''}>Начать новый бой</button><button type="button" class="tbtn2" data-g="clear" ${GM.err ? 'disabled' : ''}>Очистить историю</button></div></section>`;
 }
 function renderGroup() {
   const el = $('#tab-group'); if (el.hidden) return;

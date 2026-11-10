@@ -118,6 +118,11 @@ var st = &state{players: map[int64]*player{}, byGUID: map[string]int64{}, byName
 
 func main() {
 	log.SetFlags(log.Ltime)
+	for _, a := range os.Args[1:] {
+		if a == "--log" || a == "-log" {
+			openLog()
+		}
+	}
 	loadItems()
 	loadVisits()
 	fmt.Println("Караван: счётчик урона группы и журнал карт")
@@ -331,6 +336,9 @@ func onRequest(byte, map[byte]interface{}) {}
 
 func onResponse(_ byte, _ int16, _ string, p map[byte]interface{}) {
 	c, ok := toI64(p[253])
+	if ok {
+		logEvent("op", c, c, p)
+	}
 	if !ok {
 		return
 	}
@@ -374,6 +382,7 @@ func onEvent(code byte, p map[byte]interface{}) {
 		c64 = int64(code)
 	}
 	ev := normalize(uint16(c64), func(x uint16) bool { return knownEvents[x] })
+	logEvent("ev", int64(ev), c64, p)
 	if !knownEvents[ev] {
 		return
 	}
@@ -595,8 +604,19 @@ func (f *fight) stat(pl *player, selfID int64) *stat {
 		x = &stat{Name: key, Guild: pl.Guild, Self: pl.ObjectID == selfID}
 		f.Players[key] = x
 	}
-	x.Equip = equipNames(pl.Equip)
+	if eq := equipNames(pl.Equip); hasAny(eq) {
+		x.Equip = eq
+	}
 	return x
+}
+
+func hasAny(eq []string) bool {
+	for _, e := range eq {
+		if e != "" {
+			return true
+		}
+	}
+	return false
 }
 
 func equipNames(eq []int) []string {
@@ -683,6 +703,28 @@ func handleState(w http.ResponseWriter, r *http.Request) {
 		add(n, id, ok)
 	}
 	sort.Slice(party, func(i, j int) bool { return party[i].Name < party[j].Name })
+	known := map[string][]string{}
+	for _, po := range party {
+		if po.Seen && hasAny(po.Equip) {
+			known[po.Name] = po.Equip
+		}
+	}
+	fill := func(f *fight) {
+		if f == nil {
+			return
+		}
+		for name, x := range f.Players {
+			if !hasAny(x.Equip) {
+				if eq, ok := known[name]; ok {
+					x.Equip = eq
+				}
+			}
+		}
+	}
+	fill(st.cur)
+	for _, f := range st.history {
+		fill(f)
+	}
 	out := map[string]interface{}{
 		"ok": true, "version": 1, "now": time.Now().UnixMilli(), "self": st.selfName,
 		"devices": st.devices, "packets": st.packets, "events": st.events, "encrypted": st.encrypted, "lastPacket": st.lastPkt,
@@ -830,4 +872,58 @@ func handleGameinfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, io.LimitReader(resp.Body, 8<<20))
+}
+
+/* ---------- запись событий для проверки (--log) ---------- */
+
+var (
+	logMu   sync.Mutex
+	logFile *os.File
+	logSize int64
+)
+
+const logLimit = 30 << 20 // 30 МБ
+
+func openLog() {
+	dir := "."
+	if exe, err := os.Executable(); err == nil {
+		dir = filepath.Dir(exe)
+	}
+	name := filepath.Join(dir, "karavan-meter-log-"+time.Now().Format("2006-01-02_15-04")+".jsonl")
+	f, err := os.Create(name)
+	if err != nil {
+		fmt.Println("Не удалось создать лог:", err)
+		return
+	}
+	logFile = f
+	fmt.Println("Запись событий включена:", name)
+	fmt.Println("Подерись пару минут, затем закрой окно и пришли этот файл.")
+}
+
+func logEvent(kind string, code, raw int64, p map[byte]interface{}) {
+	if logFile == nil {
+		return
+	}
+	logMu.Lock()
+	defer logMu.Unlock()
+	if logSize > logLimit {
+		return
+	}
+	q := make(map[string]interface{}, len(p))
+	for k, v := range p {
+		if k == 252 || k == 253 {
+			continue
+		}
+		if b, ok := v.([]byte); ok && len(b) > 64 {
+			v = fmt.Sprintf("bytes(%d)", len(b))
+		}
+		q[strconv.Itoa(int(k))] = v
+	}
+	b, err := json.Marshal(map[string]interface{}{"t": time.Now().UnixMilli(), "k": kind, "c": code, "raw": raw, "self": st.selfID, "p": q})
+	if err != nil {
+		return
+	}
+	b = append(b, '\n')
+	n, _ := logFile.Write(b)
+	logSize += int64(n)
 }
