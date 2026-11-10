@@ -1,6 +1,9 @@
 # Караван — помощник торговца для Albion Online
 
-Одна HTML-страница, ничего устанавливать не нужно. Открой `index.html` в Chrome или Edge, либо по ссылке GitHub Pages.
+## Как запустить
+
+- **Программа для Windows 10 и 11.** Скачай `Karavan-windows.zip` в разделе [Releases](https://github.com/Enotsbeye/karavan-albion/releases), распакуй и запусти `Karavan.exe` (рядом должен лежать `resources.neu`). Если Windows покажет предупреждение, нажми «Подробнее», затем «Выполнить в любом случае».
+- **В браузере.** Открой [enotsbeye.github.io/karavan-albion](https://enotsbeye.github.io/karavan-albion/) или скачай `index.html` и открой его в Chrome или Edge.
 
 ## Что умеет
 
