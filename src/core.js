@@ -70,13 +70,13 @@ function indexPrices(rows, map) {
 function indexHistory(rows, map, now) {
   const from = now - 8 * 864e5;
   for (const r of rows) {
-    let cnt = 0, sum = 0, days = 0;
+    let cnt = 0, sum = 0, days = 0; const pts = [];
     for (const p of (r.data || [])) {
       const ts = Date.parse(p.timestamp + 'Z');
       if (!(ts >= from) || !p.item_count) continue;
-      cnt += p.item_count; sum += p.avg_price * p.item_count; days++;
+      cnt += p.item_count; sum += p.avg_price * p.item_count; days++; pts.push({ t: ts, p: p.avg_price, n: p.item_count });
     }
-    if (days) map[r.item_id + '|' + (r.quality || 1)] = { vol: cnt / Math.max(days, 1), avg: sum / cnt };
+    if (days) map[r.item_id + '|' + (r.quality || 1)] = { vol: cnt / Math.max(days, 1), avg: sum / cnt, pts: pts.sort((a, b) => a.t - b.t) };
   }
   return map;
 }
@@ -121,7 +121,7 @@ function computeCandidates(items, prices, cfg, now) {
 function applyHistory(cands, hist) {
   for (const c of cands) {
     const h = hist[c.id + '|' + c.qs];
-    if (h) { c.vol = h.vol; c.avg = h.avg; }
+    if (h) { c.vol = h.vol; c.avg = h.avg; c.pts = h.pts; }
   }
 }
 

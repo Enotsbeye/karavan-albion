@@ -1,8 +1,9 @@
 "use strict";
 /* ===== Караван: крафт под Чёрный рынок ===== */
-const QP = [0, 0.689, 0.25, 0.056, 0.005]; // примерный шанс качества при крафте: обычное, хорошее, выдающееся, отличное
+const QDEF = [69, 25, 5.4, 0.55, 0.05]; // примерный шанс качества при крафте, %: обычное, хорошее, выдающееся, отличное, шедевр
+const qpOf = c => { const a = (Array.isArray(c.qp) && c.qp.length === 5 ? c.qp : QDEF).map(v => Math.max(0, +v || 0)), s = a.reduce((x, y) => x + y, 0) || 1; return [0, ...a.map(v => v / s)]; };
 const RRR = [[15.2, 'Без фокуса'], [24.8, 'Бонус города'], [43.5, 'С фокусом'], [47.9, 'Фокус и бонус города']];
-const CDEF = { src: 'Martlock', dst: 'Black Market', budget: 2000000, rrr: 24.8, fee: 0, cats: ['melee', 'ranged', 'magic', 'plate', 'leather', 'cloth', 'offhand', 'cape', 'bag'], tiers: [5, 6, 7], enchs: [0, 1], arts: true, fp: 10000, fdisc: 0 };
+const CDEF = { src: 'Martlock', dst: 'Black Market', budget: 2000000, rrr: 24.8, fee: 0, cats: ['melee', 'ranged', 'magic', 'plate', 'leather', 'cloth', 'offhand', 'cape', 'bag'], tiers: [5, 6, 7], enchs: [0, 1], arts: true, fp: 10000, fdisc: 0, qp: QDEF.slice() };
 const CF = { cfg: Object.assign({}, CDEF, LS.get('karavan.craft', {})), busy: false, scan: null, rows: [], plan: null, open: null, error: null };
 for (const k of ['cats', 'tiers', 'enchs']) if (!Array.isArray(CF.cfg[k]) || !CF.cfg[k].length) CF.cfg[k] = CDEF[k].slice();
 const cSave = () => LS.set('karavan.craft', CF.cfg);
@@ -39,18 +40,19 @@ function craftCompute(items, P, hist, c, now) {
     });
     if (!ok) continue;
     cost += c.fee;
-    let best = 0, exp = 0, aSell = 0, q1 = 0;
-    for (let q = 1; q <= 4; q++) {
-      const d = D[q];
-      if (d && d.buy_price_max > 0 && ageH(d.buy_price_max_date, now) <= cfg.maxAge) { if (d.buy_price_max > best) { best = d.buy_price_max; aSell = Math.max(aSell, ageH(d.buy_price_max_date, now)); } }
+    let best = 0, exp = 0, aSell = 0, q1 = 0; const QP = qpOf(c), byQ = [];
+    for (let q = 1; q <= 5; q++) {
+      const d = D[q], own = d && d.buy_price_max > 0 && ageH(d.buy_price_max_date, now) <= cfg.maxAge ? d.buy_price_max : 0;
+      if (own > best) { best = own; aSell = Math.max(aSell, ageH(d.buy_price_max_date, now)); }
       if (q === 1) q1 = best;
-      exp += QP[q] * best;
+      exp += QP[q] * best; byQ.push({ q, p: QP[q], own, best });
     }
     if (!(exp > 0)) continue;
     const net = exp * (1 - fee), profit = net - cost, roi = profit / cost;
     if (profit <= 0 || roi * 100 < cfg.minRoi || roi * 100 > cfg.maxRoi) continue;
     let vol = null; for (let q = 1; q <= 5; q++) { const h = hist[it.id + '|' + q]; if (h) vol = (vol || 0) + h.vol; }
-    rows.push({ it, mats, cost, exp, q1, net, profit, roi, aMat, aSell, conf: Math.pow(0.5, (aMat + aSell) / cfg.halfLife), vol });
+    let pts = null; for (let q = 1; q <= 5; q++) { const h = hist[it.id + '|' + q]; if (h && h.pts && (!pts || h.pts.length > pts.length)) pts = h.pts; }
+    rows.push({ it, mats, cost, exp, q1, net, profit, roi, aMat, aSell, conf: Math.pow(0.5, (aMat + aSell) / cfg.halfLife), vol, byQ, pts });
   }
   return rows.sort((a, b) => b.profit * b.conf - a.profit * a.conf);
 }
@@ -75,7 +77,7 @@ function craftUrls(items, c) {
   const host = apiHost(cfg.server), urls = [], mats = new Set();
   for (const it of items) for (const m of it.mats) mats.add(m.id);
   for (const ch of chunkIds([...mats], 3300)) urls.push(`${host}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.src)}&qualities=1`);
-  for (const ch of chunkIds(items.map(i => i.id), 3300)) urls.push(`${host}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.dst)}&qualities=1,2,3,4`);
+  for (const ch of chunkIds(items.map(i => i.id), 3300)) urls.push(`${host}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.dst)}&qualities=1,2,3,4,5`);
   const rids = new Set(); for (const r of DB.refine) if (c.tiers.includes(r[2]) && c.enchs.includes(r[3])) { rids.add(r[0]); for (const m of r[5]) rids.add(m[0]); }
   for (const ch of chunkIds([...rids], 3300)) urls.push(`${host}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.src)}&qualities=1`);
   return urls;
@@ -104,7 +106,7 @@ async function craftScan(demo) {
       await pooled(urls, rows => { indexPrices(rows, P); setCraftBar(0.05 + 0.8 * (++done / urls.length)); });
       const pre = craftCompute(items, P, {}, c, now).slice(0, 200).map(r => r.it.id);
       const d0 = new Date(now - 9 * 864e5), date = `${d0.getUTCMonth() + 1}-${d0.getUTCDate()}-${d0.getUTCFullYear()}`;
-      try { await pooled(chunkIds(pre, 3300).map(ch => `${apiHost(cfg.server)}/api/v2/stats/history/${ch.join(',')}.json?locations=${encodeURIComponent(c.dst)}&qualities=1,2,3,4&time-scale=24&date=${date}`), rows => indexHistory(rows, H, now)); } catch (e) { }
+      try { await pooled(chunkIds(pre, 3300).map(ch => `${apiHost(cfg.server)}/api/v2/stats/history/${ch.join(',')}.json?locations=${encodeURIComponent(c.dst)}&qualities=1,2,3,4,5&time-scale=24&date=${date}`), rows => indexHistory(rows, H, now)); } catch (e) { }
     }
     CF.scan = { time: now, items, P, H, demo: !!demo, src: c.src, dst: c.dst };
     CF.open = null;
@@ -128,7 +130,7 @@ function focusUses(s, c, now) {
     const D = P[it.id] && P[it.id][s.dst], F = DB.focus[it.id.replace(/^T\d_/, '').replace(/@\d$/, '')]; if (!D || !F) continue;
     const ms = it.mats.map(m => ({ m, d: price(m.id, s.src) })); if (ms.some(x => !x.d)) continue;
     let best = 0, exp = 0, aS = 0;
-    for (let q = 1; q <= 4; q++) { const d = D[q]; if (d && d.buy_price_max > best && ageH(d.buy_price_max_date, now) <= cfg.maxAge) { best = d.buy_price_max; aS = Math.max(aS, ageH(d.buy_price_max_date, now)); } exp += QP[q] * best; }
+    const QP = qpOf(c); for (let q = 1; q <= 5; q++) { const d = D[q]; if (d && d.buy_price_max > best && ageH(d.buy_price_max_date, now) <= cfg.maxAge) { best = d.buy_price_max; aS = Math.max(aS, ageH(d.buy_price_max_date, now)); } exp += QP[q] * best; }
     if (!(exp > 0)) continue;
     const cost = rr => ms.reduce((t, x) => t + x.m.n * x.d.sell_price_min * (x.m.ret ? 1 - rr : 1), 0) + c.fee;
     const net = exp * (1 - fee), pF = net - cost(rF), pN = net - cost(rNo), focus = F * Math.pow(1.75, it.tier - 4 + it.ench) * disc;
@@ -174,6 +176,9 @@ function craftSetupHTML() {
     <div class="chipgroup"><span class="lbl">Тир</span><div class="chips">${chips([4, 5, 6, 7, 8].map(t => ({ id: t })), 'tiers', v => 'T' + v.id)}</div></div>
     <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips">${chips([0, 1, 2, 3, 4].map(t => ({ id: t })), 'enchs', v => '.' + v.id)}</div></div>
     <div class="rowline"><label class="switch"><input type="checkbox" id="cArts" ${c.arts ? 'checked' : ''}> Вещи с артефактами</label></div>
+    <details class="adv" style="margin-bottom:12px"><summary>Шансы качества при крафте</summary>
+      <div class="advgrid" style="grid-template-columns:repeat(5,1fr)">${QN.slice(1).map((n, i) => `<div><label for="cQ${i}" style="min-height:2.6em">${n}, %</label><input id="cQ${i}" data-q="${i}" type="number" min="0" step="0.01" value="${(c.qp || QDEF)[i]}"></div>`).join('')}</div>
+      <div class="hint">Примерные шансы без бонусов. Специализация и еда на качество повышают шанс высоких качеств — поправь под себя. Сумма не обязана быть 100, Караван сам приведёт к долям.</div></details>
     <div class="fld"><label for="cFee">Плата станции за одну вещь, серебро</label><input id="cFee" type="number" min="0" step="100" value="${c.fee}"><div class="hint">Посмотри в окне станции перед крафтом. Налог с продажи и премиум берутся из вкладки «Рейс».</div></div>
     <button class="go" type="button" data-c="scan" ${CF.busy || !items.length ? 'disabled' : ''}>${CF.busy ? 'Проверяю цены…' : CF.scan ? 'Обновить цены' : 'Найти выгодный крафт'}</button>
     <div class="gocap">${items.length ? fmt(items.length) + ' рецептов' : 'Под эти фильтры рецептов нет'}</div>
@@ -214,6 +219,33 @@ function craftResultHTML() {
 }
 function renderCraft() { const el = $('#tab-craft'); if (el.hidden) return; el.innerHTML = craftSetupHTML() + `<section aria-live="polite">${craftResultHTML()}</section>`; }
 
+
+function craftQtyReason(p) {
+  const r = p.r, cap = r.vol != null ? Math.max(1, Math.floor(r.vol * cfg.share / 100)) : 1;
+  if (r.vol == null) return 'Нет данных, сколько этого продаётся в день, поэтому взята одна штука для пробы.';
+  if (p.qty >= cap) return `На Чёрном рынке берут около ${fmt(r.vol)} шт. в день. Караван крафтит не больше ${cfg.share}% дневного объёма, это ${fmt(cap)} шт., чтобы ордера не кончились раньше, чем ты сдашь всё.`;
+  return `Объём позволяет до ${fmt(cap)} шт., но бюджета хватило на ${fmt(p.qty)}: серебро сначала ушло на позиции с более высокой доходностью.`;
+}
+function openCraftCard(id) {
+  const p = CF.plan.plan.find(x => x.r.it.id === id); if (!p) return;
+  const r = p.r, it = r.it, c = CF.cfg, s = CF.scan, conf = Math.round(r.conf * 100), fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree);
+  const rank = CF.plan.plan.indexOf(p) + 1, F = DB.focus[it.id.replace(/^T\d_/, '').replace(/@\d$/, '')], focus = F ? F * Math.pow(1.75, it.tier - 4 + it.ench) * (1 - c.fdisc / 100) : null;
+  const html = `<div class="cardtop"><span class="ic big">${tierLabel(it)}<img alt="" src="https://render.albiononline.com/v1/item/${it.id}.png?size=128" onerror="this.remove()"></span>
+      <div><h3>${esc(it.name)}</h3><div class="imeta"><b>${tierLabel(it)}</b> · крафт в ${esc(cityName(s.src))}, сдать в ${esc(cityName(s.dst))}</div>
+      <div class="cardprofit">+${fmt(r.profit * p.qty)}<span>за ${p.qty} шт., с одной +${fmt(r.profit)} (${(r.roi * 100).toFixed(0)}%)</span></div></div>
+      <button type="button" class="x" data-close aria-label="Закрыть">✕</button></div>
+    <section class="cs"><h4>Почему эта вещь</h4><p>Место №${rank} в плане. Себестоимость одной вещи <b>${fmt(r.cost)}</b> с учётом возврата ресурсов ${String(c.rrr).replace('.', ',')}%, а в среднем её можно сдать за <b>${fmt(r.exp)}</b>, минус налог ${String(fee).replace('.', ',')}%.</p></section>
+    <section class="cs"><h4>Качество и цена сдачи</h4><p class="imeta">Качество выпадает случайно. Вещь высокого качества можно сдать в ордер на любое качество ниже, поэтому берётся лучший из доступных ордеров.</p>
+      <table class="cmp"><thead><tr><th>Качество</th><th>Шанс</th><th>Ордер ЧР</th><th>Сдашь за</th></tr></thead><tbody>
+      ${r.byQ.map(q => `<tr><td>${QN[q.q]}</td><td>${(q.p * 100).toFixed(q.p < 0.01 ? 2 : 1).replace('.', ',')}%</td><td>${q.own ? fmt(q.own) : '—'}</td><td>${q.best ? fmt(q.best) : 'некуда сдать'}</td></tr>`).join('')}
+      </tbody></table><p class="imeta">Средняя цена сдачи с учётом шансов: ${fmt(r.exp)}.${r.byQ[4].own ? ` Шедевр сейчас берут за ${fmt(r.byQ[4].own)}.` : ' Ордеров на шедевр сейчас нет.'}</p></section>
+    <section class="cs"><h4>Почему ${p.qty} шт.</h4><p>${craftQtyReason(p)}</p></section>
+    <section class="cs"><h4>Материалы на ${p.qty} шт.</h4>${r.mats.map(m => `<div class="imeta" style="font-size:14px;margin-top:5px"><b>${fmt(Math.ceil(m.eff * p.qty))} шт.</b> ${esc(matName(m.kind, m.t, m.e))} по ${fmt(m.price)}${m.ret ? `, в рецепте ${m.n}, с возвратом ~${m.eff.toFixed(1).replace('.', ',')}` : ', не возвращается'}</div>`).join('')}</section>
+    <section class="cs"><h4>Цена за неделю</h4>${spark(r.pts, Date.now(), r.q1 || null)}</section>
+    <section class="cs"><h4>Можно ли верить ценам</h4><div class="confbar"><i style="width:${conf}%"></i></div><p>Доверие ${conf}%. Цены материалов записаны ${fmtAge(r.aMat)} назад, цена сдачи ${fmtAge(r.aSell)} назад.${focus ? ` С фокусом одна вещь стоит около ${fmt(focus)} очков фокуса.` : ''}</p></section>`;
+  modal(html, 'card');
+}
+
 function craftShopping() {
   const s = CF.scan, need = new Map();
   for (const p of CF.plan.plan) for (const m of p.r.mats) { const k = m.id, x = need.get(k) || { m, n: 0 }; x.n += m.eff * p.qty; need.set(k, x); }
@@ -230,7 +262,7 @@ $('#tab-craft').addEventListener('click', e => {
   const a = b.dataset.c;
   if (a === 'scan') return craftScan(false);
   if (a === 'demo') return craftScan(true);
-  if (a === 'open') { const id = b.closest('.item').dataset.id; CF.open = CF.open === id ? null : id; return renderCraft(); }
+  if (a === 'open') return openCraftCard(b.closest('.item').dataset.id);
   if (a === 'copy') { const txt = craftShopping(); navigator.clipboard.writeText(txt).then(() => toast('Список закупки скопирован'), () => { modal(`<h3>Список закупки</h3><textarea readonly>${esc(txt)}</textarea><div class="dlgacts"><button type="button" data-close>Закрыть</button></div>`); $('#modal textarea').select(); }); }
 });
 $('#tab-craft').addEventListener('change', e => {
@@ -240,6 +272,7 @@ $('#tab-craft').addEventListener('change', e => {
   else if (t.id === 'cRrr') c.rrr = Number(t.value);
   else if (t.id === 'cFee') c.fee = Math.max(0, Number(t.value) || 0);
   else if (t.id === 'cArts') c.arts = t.checked;
+  else if (t.dataset && t.dataset.q != null) { c.qp = (c.qp || QDEF).slice(); c.qp[+t.dataset.q] = Math.max(0, parseFloat(String(t.value).replace(',', '.')) || 0); }
   else if (t.id === 'cFp') c.fp = Math.max(0, Number(t.value) || 0);
   else if (t.id === 'cFd') c.fdisc = Math.min(90, Math.max(0, Number(t.value) || 0));
   else return;

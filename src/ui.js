@@ -269,13 +269,13 @@ function rowHTML(r, pc) {
     <div class="irow">
       <input type="checkbox" class="chk" data-act="lock" ${r.locked ? 'checked' : ''} aria-label="Куплено: ${esc(it.name)} ${tierLabel(it)}">
       <span class="ic">${tierLabel(it)}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${c.id}.png?size=64&amp;quality=${c.qb}" onerror="this.remove()"></span>
-      <button type="button" class="imain" data-act="open" aria-expanded="${open}">
+      <button type="button" class="imain" data-act="open" aria-haspopup="dialog">
         <div class="iname">${esc(it.name)}</div>
         <div class="imeta"><b>${tierLabel(it)}</b>${it.gear ? ', ' + QN[c.qb].toLowerCase() : ''}, <b>${fmt(r.qty)} шт.</b> по ${fmt(r.cost / r.qty)}</div>
         <div class="imeta"><span class="dot ${dot}"></span>цены ${fmtAge(c.ageB)} и ${fmtAge(c.ageS)} назад</div>
       </button>
       <div class="iprofit"><b>+${fmtShort(r.profit)}</b><span>${fmtShort(r.cost)}</span></div>
-    </div>${open ? detailHTML(r, pc) : ''}
+    </div>${r.locked && open ? detailHTML(r, pc) : ''}
   </div>`;
 }
 function riskFactsHTML() {
@@ -339,6 +339,71 @@ function renderResult() {
 }
 function plural(n, a, b, c) { const m = n % 100, k = n % 10; return (m > 10 && m < 20) ? c : k === 1 ? a : (k >= 2 && k <= 4) ? b : c; }
 
+
+/* ---------- карточка позиции ---------- */
+function spark(pts, now, mark) {
+  if (!pts || pts.length < 2) return '<div class="imeta">Истории цен за неделю нет</div>';
+  const W = 300, H = 70, ps = pts.map(p => p.p).concat(mark ? [mark] : []), lo = Math.min(...ps), hi = Math.max(...ps), span = hi - lo || 1;
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t || t0 + 1, x = t => 4 + (W - 8) * (t - t0) / Math.max(1, t1 - t0), y = v => 6 + (H - 12) * (1 - (v - lo) / span);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + x(p.t).toFixed(1) + ' ' + y(p.p).toFixed(1)).join(' ');
+  const my = mark ? y(mark) : null;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Средняя цена сделок по дням">
+    ${mark ? `<line x1="0" x2="${W}" y1="${my.toFixed(1)}" y2="${my.toFixed(1)}" stroke="#9C3B2B" stroke-dasharray="4 4" stroke-width="1.5"/>` : ''}
+    <path d="${line}" fill="none" stroke="#1D2932" stroke-width="2.2" stroke-linejoin="round"/>
+    ${pts.map(p => `<circle cx="${x(p.t).toFixed(1)}" cy="${y(p.p).toFixed(1)}" r="2.6" fill="#1D2932"/>`).join('')}</svg>
+    <div class="sparkcap"><span>${new Date(t0).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span><span>${mark ? '<i class="sw"></i>цена сейчас' : ''}</span><span>${new Date(t1).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</span></div>`;
+}
+function qtyReason(r, pc) {
+  const c = r.cand, { cap, lot } = capFor(c, pc), units = buildUnits(c, pc).units.length * lot;
+  if (r.locked) return `Ты отметил ${fmt(r.qty)} шт. как купленные.`;
+  if (r.qty >= cap) {
+    if (c.vol == null) return c.item.gear ? 'Нет данных, сколько этого продаётся в день, поэтому Караван берёт осторожный минимум: одну штуку.' : 'Нет данных об объёме продаж, поэтому взята небольшая партия.';
+    const byVol = Math.floor(c.vol * pc.share / 100);
+    if (c.item.gear && byVol >= pc.maxPerPos) return `Продаётся около ${fmt(c.vol)} шт. в день, но в настройках стоит не больше ${pc.maxPerPos} шт. одной вещи. Так рынок не просядет от твоих же продаж.`;
+    return `Продаётся около ${fmt(c.vol)} шт. в день. Караван берёт не больше ${pc.share}% дневного объёма, это ${fmt(Math.max(1, byVol))} шт., чтобы груз точно разошёлся.`;
+  }
+  if (r.qty >= units) return `Каждая следующая штука считается дороже в закупке и дешевле в продаже на ${pc.slip}%, а на ${fmt(r.qty + lot)}-й прибыль уже ниже порога ${pc.minRoi}%.`;
+  const t = S.plan.totals, leftB = S.plan.budget - t.cost, leftW = S.plan.weightCap - t.weight;
+  const needB = c.buy * lot > leftB, needW = c.item.w * lot > leftW;
+  return needB && needW ? 'Больше не влезло: закончились и серебро, и свободный вес. Серебро ушло на позиции с более высокой прибылью.'
+    : needW ? `Больше не влезло по весу: одна штука весит ${c.item.w.toLocaleString('ru-RU')} кг, а свободно ${Math.max(0, Math.round(leftW))} кг.`
+      : 'Больше не влезло по серебру: остаток бюджета ушёл на позиции, которые дают больше прибыли на вложенное серебро.';
+}
+function cardHTML(r, pc) {
+  const c = r.cand, it = c.item, order = pc.mode === 'order', rank = S.plan.rows.indexOf(r) + 1, fee = feeRate(pc);
+  const conf = Math.round(c.conf * 100), confTxt = conf >= 55 ? 'цены свежие, им можно доверять' : conf >= 25 ? 'цены не первой свежести, сверь в игре' : 'цены старые, сверь обязательно';
+  const avgTxt = c.avg ? (() => { const d = (c.sell - c.avg) / c.avg * 100; return Math.abs(d) < 5 ? 'на уровне средней за неделю' : d > 0 ? `на ${d.toFixed(0)}% выше средней за неделю: возможно, ордер скоро уйдёт` : `на ${(-d).toFixed(0)}% ниже средней за неделю`; })() : 'средней за неделю нет';
+  const shareOfCargo = S.plan.totals.cost > 0 ? r.cost / S.plan.totals.cost * 100 : 0;
+  return `<div class="cardtop"><span class="ic big">${tierLabel(it)}<img alt="" src="https://render.albiononline.com/v1/item/${c.id}.png?size=128&amp;quality=${c.qb}" onerror="this.remove()"></span>
+      <div><h3>${esc(it.name)}</h3><div class="imeta"><b>${tierLabel(it)}</b>${it.gear ? ', ' + QN[c.qb].toLowerCase() : ''} · ${esc(cityName(pc.src))} → ${esc(cityName(pc.dst))}</div>
+      <div class="cardprofit">+${fmt(r.profit)}<span> за ${fmt(r.qty)} шт., ожидаемо +${fmt(r.exp)}</span></div></div>
+      <button type="button" class="x" data-close aria-label="Закрыть">✕</button></div>
+    <section class="cs"><h4>Почему эта вещь</h4>
+      <p>Место №${rank} в грузе по ожидаемой прибыли. С каждой штуки остаётся <b>+${fmt(c.profit)}</b> чистыми (${(c.roi * 100).toFixed(0)}% к закупке) после налога ${(fee * 100).toFixed(1).replace('.', ',')}%.</p>
+      <dl class="cdl"><div><dt>Купить</dt><dd>${fmt(c.buy)}</dd></div><div><dt>${order ? 'Выставить за' : 'Сдать за'}</dt><dd>${fmt(c.sell)}</dd></div><div><dt>Не дороже</dt><dd>${fmt(c.net)}</dd></div></dl>
+      <p class="imeta">«Не дороже» — цена закупки, выше которой позиция перестаёт приносить прибыль.${it.gear && !order && c.qs < c.qb ? ` Ордер на Чёрном рынке принимает качество «${QN[c.qs].toLowerCase()}» и выше, поэтому подходит и твоё «${QN[c.qb].toLowerCase()}».` : ''}</p></section>
+    <section class="cs"><h4>Почему ${fmt(r.qty)} шт.</h4><p>${qtyReason(r, pc)}</p></section>
+    <section class="cs"><h4>Цена за неделю</h4>${spark(c.pts, Date.now(), c.sell)}<p class="imeta">Цена сдачи сейчас ${avgTxt}.${c.avg ? ' Средняя ' + fmt(c.avg) + '.' : ''}</p></section>
+    <section class="cs"><h4>Можно ли верить ценам</h4>
+      <div class="confbar"><i style="width:${conf}%"></i></div>
+      <p>Доверие ${conf}%: ${confTxt}. Цену закупки записали ${fmtAge(c.ageB)} назад, цену сдачи ${fmtAge(c.ageS)} назад. Поэтому в ожидаемой прибыли эта позиция учтена как +${fmt(r.exp)}, а не +${fmt(r.profit)}.</p></section>
+    <section class="cs"><h4>Риск</h4><p>Позиция занимает ${shareOfCargo.toFixed(0)}% вложений груза (${fmt(r.cost)}) и весит ${(Math.round(r.weight * 10) / 10).toLocaleString('ru-RU')} кг. ${sameCity() ? 'Везти через опасные зоны не нужно.' : `Если груз отнимут, потеряешь ${fmt(r.cost)} только на этой позиции.`}</p></section>
+    <div class="acts">${r.locked ? `<button type="button" class="tbtn quiet" data-cact="unlock">Снять отметку «куплено»</button>` : `<button type="button" class="tbtn solid" data-cact="lock">Куплено</button><button type="button" class="tbtn quiet" data-cact="exclude">Вычеркнуть: цена в игре другая</button>`}</div>`;
+}
+function openCard(key) {
+  const r = rowByKey(key); if (!r) return;
+  modal(cardHTML(r, planCfg()), 'card');
+  const box = $('#modal .card');
+  box.addEventListener('click', e => {
+    const b = e.target.closest('[data-cact]'); if (!b) return;
+    const a = b.dataset.cact; closeModal();
+    if (a === 'lock') S.locked.set(key, { cand: r.cand, qty: r.qty, actualBuy: 0 });
+    if (a === 'unlock') S.locked.delete(key);
+    if (a === 'exclude') { S.excluded.add(key); S.locked.delete(key); toast('Вычеркнуто, остаток груза пересобран', 'Вернуть', () => { S.excluded.delete(key); recalc(); }); }
+    recalc();
+  });
+}
+
 /* ---------- действия в накладной ---------- */
 function rowByKey(key) { return S.plan && S.plan.rows.find(r => r.key === key); }
 function onResultClick(e) {
@@ -347,7 +412,7 @@ function onResultClick(e) {
   if (act === 'retry') return scan(false);
   if (act === 'demo') return S.lastCompare ? compareCities(true) : scan(true);
   if (act === 'pick') return pickCity(a.dataset.city);
-  if (act === 'open') { S.open = S.open === key ? null : key; return renderResult(); }
+  if (act === 'open') return openCard(key);
   if (act === 'lock' || act === 'lockbtn' || act === 'unlock') {
     if (!r) return;
     if (S.locked.has(key)) S.locked.delete(key); else S.locked.set(key, { cand: r.cand, qty: r.qty, actualBuy: 0 });
@@ -432,8 +497,8 @@ function showTab(tab) {
 }
 
 /* ---------- окно и уведомление ---------- */
-function modal(html) {
-  $('#modal').innerHTML = `<div class="ovl"><div class="dlg" role="dialog" aria-modal="true">${html}</div></div>`;
+function modal(html, cls) {
+  $('#modal').innerHTML = `<div class="ovl"><div class="${cls || 'dlg'}" role="dialog" aria-modal="true">${html}</div></div>`;
   const first = $('#modal input, #modal textarea, #modal button'); if (first) first.focus();
 }
 function closeModal() { $('#modal').innerHTML = ''; }
