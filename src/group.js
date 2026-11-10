@@ -75,7 +75,7 @@ function setupGroupHTML() {
   if (GM.err || !d) status = `<div class="note warn"><b>Счётчик не запущен.</b> Скачай KaravanMeter.exe в разделе Releases на GitHub и запусти его на том же компьютере, где играешь. Нужен бесплатный драйвер <a href="https://npcap.com/" target="_blank" rel="noopener">Npcap</a>: при установке отметь «WinPcap API-compatible Mode».</div>`;
   else if (!d.packets) status = `<div class="note warn">Счётчик запущен, но пакетов игры пока нет. Зайди в игру. Если ты уже в игре, перезапусти счётчик от имени администратора.</div>`;
   else if (!d.events) status = `<div class="note warn">Пакеты игры идут, но события урона не распознаются${d.encrypted ? ' (часть данных зашифрована)' : ''}. Скорее всего, после обновления игры поменялись коды событий: напиши, обновлю счётчик.</div>`;
-  else status = `<div class="note ok">Счётчик работает${d.self ? ': ты — ' + esc(d.self) : ''}. Пакетов: ${fmt(d.packets)}, событий: ${fmt(d.events)}.</div>`;
+  else status = `<div class="note ok">Счётчик работает${d.self ? ': ты — ' + esc(d.self) : ''}. Пакетов: ${fmt(d.packets)}, событий: ${fmt(d.events)}.</div>${UPD.meter > (d.version || 1) ? `<div class="note warn">Вышла новая версия счётчика. <a href="${UPD.release}" target="_blank" rel="noopener">Скачать с GitHub</a>, затем замени KaravanMeter.exe в папке Каравана.</div>` : ''}`;
   const party = (d && d.party) || [];
   return `<section class="setup"><h2>Группа</h2>${status}
     ${party.length ? `<div class="chipgroup"><span class="lbl">Пати</span>${party.map(p => `<div class="pmem"><b>${esc(p.name)}</b>${p.seen ? '' : ' <span class="imeta">не рядом</span>'}${p.seen ? gearHTML(p.equip) : ''}</div>`).join('')}</div>` : ''}

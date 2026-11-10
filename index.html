@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script>/* karavan-build 1794324980 */</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Караван — планировщик груза для Albion Online</title>
@@ -359,6 +360,9 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 @media(max-width:899px){.refbtn span{display:none}.refbtn{padding:8px}}
 @media(min-width:900px){.wrap{max-width:none;margin:0}.content>*{max-width:1500px}}
 .gslot i{max-width:44px;overflow:hidden;text-overflow:clip}
+.updline{font-size:11px;color:var(--mute);display:flex;flex-direction:column;gap:2px}.updline .linkbtn{font-size:11px;text-align:left;padding:0}
+.updbtn{background:var(--amber);color:var(--amber-ink);border:0;border-radius:8px;padding:8px;font-weight:600;font-size:12px;cursor:pointer}
+@media(max-width:899px){.updline span,.updline .linkbtn{display:none}}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -372,6 +376,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
     <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
       <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="uk">UA</option></select>
+      <div id="updLine" class="updline"></div>
     </div>
   </aside>
   <div class="content">
@@ -751,6 +756,9 @@ const LOC = LANG === 'uk' ? 'uk-UA' : 'ru-RU';
 
 const UK = {
   /* длинные фразы */
+  'Версия:': 'Версія:', 'Проверить обновления': 'Перевірити оновлення', 'Проверяю…': 'Перевіряю…', 'Обновление готово — перезапустить': 'Оновлення готове — перезапустити', 'разработка': 'розробка',
+  'Сайт всегда последней версии': 'Сайт завжди останньої версії', 'У тебя последняя версия': 'У тебе остання версія', 'Не удалось проверить обновления. Проверь интернет.': 'Не вдалося перевірити оновлення. Перевір інтернет.',
+  'Вышла новая версия счётчика.': 'Вийшла нова версія лічильника.', 'Скачать с GitHub': 'Завантажити з GitHub', ', затем замени KaravanMeter.exe в папке Каравана.': ', потім заміни KaravanMeter.exe у теці Каравану.',
   'за сутки': 'за добу', 'Данных мало, рейтинг примерный.': 'Даних мало, рейтинг приблизний.',
   'мало данных': 'мало даних', 'Какое оружие чаще всего убивает, что к нему носят и сколько стоит такой сет.': 'Яка зброя найчастіше вбиває, що до неї носять і скільки коштує такий сет.',
   'Чужих игроков не было': 'Чужих гравців не було', 'Игроков в час: ': 'Гравців на годину: ',
@@ -2535,7 +2543,7 @@ function setupGroupHTML() {
   if (GM.err || !d) status = `<div class="note warn"><b>Счётчик не запущен.</b> Скачай KaravanMeter.exe в разделе Releases на GitHub и запусти его на том же компьютере, где играешь. Нужен бесплатный драйвер <a href="https://npcap.com/" target="_blank" rel="noopener">Npcap</a>: при установке отметь «WinPcap API-compatible Mode».</div>`;
   else if (!d.packets) status = `<div class="note warn">Счётчик запущен, но пакетов игры пока нет. Зайди в игру. Если ты уже в игре, перезапусти счётчик от имени администратора.</div>`;
   else if (!d.events) status = `<div class="note warn">Пакеты игры идут, но события урона не распознаются${d.encrypted ? ' (часть данных зашифрована)' : ''}. Скорее всего, после обновления игры поменялись коды событий: напиши, обновлю счётчик.</div>`;
-  else status = `<div class="note ok">Счётчик работает${d.self ? ': ты — ' + esc(d.self) : ''}. Пакетов: ${fmt(d.packets)}, событий: ${fmt(d.events)}.</div>`;
+  else status = `<div class="note ok">Счётчик работает${d.self ? ': ты — ' + esc(d.self) : ''}. Пакетов: ${fmt(d.packets)}, событий: ${fmt(d.events)}.</div>${UPD.meter > (d.version || 1) ? `<div class="note warn">Вышла новая версия счётчика. <a href="${UPD.release}" target="_blank" rel="noopener">Скачать с GitHub</a>, затем замени KaravanMeter.exe в папке Каравана.</div>` : ''}`;
   const party = (d && d.party) || [];
   return `<section class="setup"><h2>Группа</h2>${status}
     ${party.length ? `<div class="chipgroup"><span class="lbl">Пати</span>${party.map(p => `<div class="pmem"><b>${esc(p.name)}</b>${p.seen ? '' : ' <span class="imeta">не рядом</span>'}${p.seen ? gearHTML(p.equip) : ''}</div>`).join('')}</div>` : ''}
@@ -3012,6 +3020,54 @@ function renderHome() {
 }
 $('#tab-home').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) showTab(b.dataset.go); });
 showTab('home');
+
+</script>
+<script>
+"use strict";
+/* ===== Караван: обновление через GitHub =====
+   Сайт на GitHub Pages всегда свежий. Программа для Windows раз в 6 часов (и по кнопке) смотрит version.json на сайте,
+   скачивает новую страницу, кладёт её в localStorage и предлагает перезапуск. Загрузчик программы запускает самую новую версию,
+   а если она не смогла запуститься, возвращается к встроенной. Настройки и журнал не теряются: адрес страницы тот же. */
+const BUILD = 1794324980;
+const UPD = { site: 'https://enotsbeye.github.io/karavan-albion/', release: 'https://github.com/Enotsbeye/karavan-albion/releases/latest', meter: 0, busy: false, ready: 0 };
+const IS_SITE = /github\.io$/.test(location.hostname);
+const buildDate = b => b ? new Date(b * 1000).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'разработка';
+
+async function checkUpdate(manual) {
+  if (UPD.busy) return;
+  UPD.busy = true; updLine();
+  try {
+    const r = await fetch(UPD.site + 'version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const v = await r.json();
+    UPD.meter = v.meter || 0;
+    if (typeof renderGroup === 'function' && !$('#tab-group').hidden) renderGroup();
+    if (IS_SITE || !(v.build > BUILD)) { if (manual) toast(IS_SITE ? 'Сайт всегда последней версии' : 'У тебя последняя версия'); return; }
+    if ((+LS.get('karavan.codev', 0)) >= v.build) { UPD.ready = v.build; return; }
+    if ((+LS.get('karavan.badv', 0)) === v.build) return;
+    const h = await fetch(UPD.site + 'index.html?t=' + Date.now(), { cache: 'no-store' });
+    if (!h.ok) throw new Error('HTTP ' + h.status);
+    const code = await h.text();
+    if (!code.includes('/* karavan-build ' + v.build + ' */')) throw new Error('bad');
+    localStorage.setItem('karavan.code', code); localStorage.setItem('karavan.codev', String(v.build));
+    UPD.ready = v.build;
+  } catch (e) { if (manual) toast('Не удалось проверить обновления. Проверь интернет.'); }
+  finally { UPD.busy = false; updLine(); }
+}
+function updLine() {
+  const el = $('#updLine'); if (!el) return;
+  el.innerHTML = UPD.ready
+    ? `<button type="button" class="updbtn" data-upd="restart">Обновление готово — перезапустить</button>`
+    : `<span>Версия: ${esc(buildDate(BUILD))}</span><button type="button" class="linkbtn" data-upd="check">${UPD.busy ? 'Проверяю…' : 'Проверить обновления'}</button>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-upd]'); if (!b) return;
+  if (b.dataset.upd === 'restart') location.reload();
+  else checkUpdate(true);
+});
+try { localStorage.setItem('karavan.okv', String(BUILD)); } catch (e) { }
+updLine();
+if (BUILD) { setTimeout(() => checkUpdate(false), 4000); setInterval(() => checkUpdate(false), 6 * 3600e3); }
 
 </script>
 </body>

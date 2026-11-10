@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<script>/* karavan-build /*__BUILDN__*/ */</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Караван — планировщик груза для Albion Online</title>
@@ -359,6 +360,9 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 @media(max-width:899px){.refbtn span{display:none}.refbtn{padding:8px}}
 @media(min-width:900px){.wrap{max-width:none;margin:0}.content>*{max-width:1500px}}
 .gslot i{max-width:44px;overflow:hidden;text-overflow:clip}
+.updline{font-size:11px;color:var(--mute);display:flex;flex-direction:column;gap:2px}.updline .linkbtn{font-size:11px;text-align:left;padding:0}
+.updbtn{background:var(--amber);color:var(--amber-ink);border:0;border-radius:8px;padding:8px;font-weight:600;font-size:12px;cursor:pointer}
+@media(max-width:899px){.updline span,.updline .linkbtn{display:none}}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -372,6 +376,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
     <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
       <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="uk">UA</option></select>
+      <div id="updLine" class="updline"></div>
     </div>
   </aside>
   <div class="content">
@@ -472,6 +477,9 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 </script>
 <script>
 /*__HOME__*/
+</script>
+<script>
+/*__UPDATE__*/
 </script>
 </body>
 </html>

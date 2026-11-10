@@ -726,7 +726,7 @@ func handleState(w http.ResponseWriter, r *http.Request) {
 		fill(f)
 	}
 	out := map[string]interface{}{
-		"ok": true, "version": 1, "now": time.Now().UnixMilli(), "self": st.selfName,
+		"ok": true, "version": 2, "now": time.Now().UnixMilli(), "self": st.selfName,
 		"devices": st.devices, "packets": st.packets, "events": st.events, "encrypted": st.encrypted, "lastPacket": st.lastPkt,
 		"party": party, "current": st.cur, "history": st.history,
 	}
