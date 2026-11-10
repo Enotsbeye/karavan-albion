@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Караван: мета-сеты по киллборду, с ценой сета под бюджет ===== */
-const MTDEF = { kills: 1000, group: 'all', tier: 6, ench: 0, budget: 0, city: 'Caerleon', sort: 'kills' };
+const MTDEF = { kills: 1000, group: 'all', tier: 6, ench: 0, budget: 0, city: 'any', sort: 'kills', sure: false };
 const MT = { cfg: Object.assign({}, MTDEF, LS.get('karavan.metacfg', {})), data: LS.get('karavan.meta', null), busy: false, err: null, prices: {}, pricing: false, via: null };
 const GI_HOST = { europe: 'gameinfo-ams.albiononline.com', west: 'gameinfo.albiononline.com', east: 'gameinfo-sgp.albiononline.com' };
 const MGROUP = [['all', 'Все бои'], ['solo', 'Соло'], ['small', 'Малые группы 2–5'], ['large', 'Большие группы 6+']];
@@ -67,27 +67,48 @@ function setIds(b, c) {
   const parts = b.parts.concat([cape ? cape[0] : '']);
   return parts.map(p => p ? `T${c.tier}_${p}${sfx}` : '');
 }
+/* Цены по всем городам: так можно выбрать «любой город» и сверить цену с другими рынками */
+const MCITIES = () => CITIES.filter(x => !x.sellOnly).map(x => x.id);
 async function metaPrice() {
   if (!MT.data || MT.pricing) return;
   const c = MT.cfg, list = (MT.data.builds[c.group] || []).slice(0, 60), need = new Set();
-  for (const b of list) for (const id of setIds(b, c)) if (id && !(id + '|' + c.city in MT.prices)) need.add(id);
+  for (const b of list) for (const id of setIds(b, c)) if (id && !(id in MT.prices)) need.add(id);
   if (!need.size) return;
   MT.pricing = true;
   try {
-    const P = {};
-    await pooled(chunkIds([...need], 3300).map(ch => `${apiHost(cfg.server)}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(c.city)}&qualities=1,2,3`), rows => indexPrices(rows, P));
-    const now = Date.now();
+    const P = {}, cities = MCITIES();
+    await pooled(chunkIds([...need], 2600).map(ch => `${apiHost(cfg.server)}/api/v2/stats/prices/${ch.join(',')}.json?locations=${encodeURIComponent(cities.join(','))}&qualities=1,2,3`), rows => indexPrices(rows, P));
     for (const id of need) {
-      const p = (P[id] || {})[c.city] || {}; let best = 0;
-      for (const q of [1, 2, 3]) if (p[q] && p[q].sell_price_min > 0 && ageH(p[q].sell_price_min_date, now) < 72 && (!best || p[q].sell_price_min < best)) best = p[q].sell_price_min;
-      MT.prices[id + '|' + c.city] = best;
+      const by = {};
+      for (const city of cities) {
+        const p = (P[id] || {})[city] || {}; let best = null;
+        for (const q of [1, 2, 3]) if (p[q] && p[q].sell_price_min > 0 && (!best || p[q].sell_price_min < best.p)) best = { p: p[q].sell_price_min, t: Date.parse(p[q].sell_price_min_date + 'Z') };
+        if (best) by[city] = best;
+      }
+      MT.prices[id] = by;
     }
   } catch (e) { }
   MT.pricing = false;
 }
+/* Цене вещи верим, если она не старше 24 ч и не выбивается из цен других городов больше чем вдвое */
+const META_FRESH = 24;
+function slotPrice(id, city, now) {
+  const by = MT.prices[id]; if (!by) return { why: 'цены ещё грузятся' };
+  const all = Object.entries(by).filter(([, v]) => (now - v.t) / 36e5 <= 72).map(([k, v]) => ({ city: k, p: v.p, age: (now - v.t) / 36e5 }));
+  if (!all.length) return { why: 'никто давно не смотрел эту вещь на рынке' };
+  const med = all.map(x => x.p).sort((x, y) => x - y)[Math.floor(all.length / 2)];
+  const judge = x => x.age > META_FRESH ? 'цене ' + Math.round(x.age) + ' ч, это слишком давно' : all.length >= 3 && x.p > med * 2 ? cityName(x.city) + ': вдвое дороже, чем в других городах' : all.length >= 3 && x.p < med * 0.4 ? 'подозрительно дёшево, могли уже выкупить' : '';
+  if (city === 'any') {
+    const ok = all.filter(x => !judge(x)).sort((x, y) => x.p - y.p)[0];
+    return ok ? { p: ok.p, city: ok.city, sure: true } : { p: all.sort((x, y) => x.p - y.p)[0].p, why: judge(all[0]) };
+  }
+  const x = all.find(v => v.city === city); if (!x) return { why: cityName(city) + ': нет свежих лотов' };
+  const w = judge(x); return { p: x.p, city, sure: !w, why: w };
+}
 function setPrice(b, c) {
-  let sum = 0, miss = 0; const items = setIds(b, c).map(id => { if (!id) return null; const p = MT.prices[id + '|' + c.city]; if (!p) miss++; else sum += p; return { id, p }; });
-  return { sum, miss, items };
+  const now = Date.now(); let sum = 0, unsure = 0;
+  const items = setIds(b, c).map(id => { if (!id) return null; const s = slotPrice(id, c.city, now); if (s.sure) sum += s.p; else unsure++; return Object.assign({ id }, s); });
+  return { sum: unsure ? 0 : sum, unsure, items };
 }
 
 function renderMeta() {
@@ -95,31 +116,35 @@ function renderMeta() {
   const c = MT.cfg, d = MT.data, age = d ? Date.now() - d.time : Infinity;
   const setup = `<section class="setup"><h2>Мета-сеты</h2>
     <p class="imeta" style="margin:0 0 12px;color:var(--mute)">Сводка по последним убийствам с официального киллборда: какие сеты чаще всего убивают и сколько стоит собрать такой сет.</p>
-    ${MT.err ? `<div class="note err">${MT.err === 'empty' ? 'Киллборд вернул пустой ответ, попробуй позже.' : 'Не получилось загрузить свежий киллборд напрямую. Ниже — последняя сводка с сайта Каравана, она обновляется раз в сутки.'}</div>` : ''}
+    ${MT.err ? `<div class="note ${MT.err === 'empty' || !d ? 'err' : 'warn'}">${MT.err === 'empty' ? 'Киллборд вернул пустой ответ, попробуй позже.' : d ? 'Киллборд напрямую не открылся, поэтому показываю сводку с сайта Каравана. Она обновляется каждый час.' : 'Не получилось загрузить киллборд. Проверь интернет или запусти KaravanMeter.exe, он открывает киллборд в обход.'}</div>` : ''}
     ${d ? `<div class="note ${age > DAY ? 'warn' : 'ok'}">Сводка от ${new Date(d.time).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, убийств: ${fmt(d.events)}.${age > DAY ? ' Сводка старше суток.' : ''}</div>` : ''}
     <div class="fld"><label for="mtGroup">Какие бои</label><select id="mtGroup">${MGROUP.map(([k, n]) => `<option value="${k}" ${c.group === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     <div class="two fld"><div><label for="mtTier">Собрать в тире</label><select id="mtTier">${[4, 5, 6, 7, 8].map(t => `<option value="${t}" ${c.tier === t ? 'selected' : ''}>T${t}</option>`).join('')}</select></div>
       <div><label for="mtEnch">Зачарование</label><select id="mtEnch">${[0, 1, 2, 3, 4].map(t => `<option value="${t}" ${c.ench === t ? 'selected' : ''}>.${t}</option>`).join('')}</select></div></div>
     <div class="two fld"><div><label for="mtBudget">Бюджет на сет</label><input id="mtBudget" type="text" placeholder="без лимита" value="${c.budget ? fmt(c.budget) : ''}"></div>
-      <div><label for="mtCity">Где покупать</label><select id="mtCity">${CITIES.filter(x => !x.sellOnly).map(x => `<option value="${esc(x.id)}" ${x.id === c.city ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div></div>
+      <div><label for="mtCity">Где покупать</label><select id="mtCity"><option value="any" ${c.city === 'any' ? 'selected' : ''}>Любой, где дешевле</option>${CITIES.filter(x => !x.sellOnly).map(x => `<option value="${esc(x.id)}" ${x.id === c.city ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div></div>
     <div class="two fld"><div><label for="mtKills">Сколько убийств брать</label><select id="mtKills">${[500, 1000, 2000].map(n => `<option value="${n}" ${c.kills === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
       <div><label for="mtSort">Сортировать</label><select id="mtSort"><option value="kills" ${c.sort === 'kills' ? 'selected' : ''}>По убийствам</option><option value="wr" ${c.sort === 'wr' ? 'selected' : ''}>По доле побед</option><option value="price" ${c.sort === 'price' ? 'selected' : ''}>По цене</option></select></div></div>
+    <label class="switch" style="margin:4px 0 12px"><input type="checkbox" id="mtSure" ${c.sure ? 'checked' : ''}> Только сеты с точной ценой</label>
+    <p class="imeta" style="margin:-6px 0 12px;color:var(--mute)">Цену показываю, только если каждая вещь сета видна на рынке не дольше 24 часов назад и её цена не выбивается из других городов больше чем вдвое. Иначе ставлю «?».</p>
     <button class="go" type="button" data-mt="refresh" ${MT.busy ? 'disabled' : ''}>${MT.busy ? 'Загружаю киллборд…' : d ? 'Обновить сводку' : 'Собрать сводку'}</button>
-    <div class="gocap">Сводку раз в сутки собирает сайт Каравана, скачивать ничего не нужно</div>
+    <div class="gocap">Сводку каждый час собирает сайт Каравана, скачивать ничего не нужно</div>
     <div class="bar" id="mtbar" hidden><i></i></div></section>`;
   let right;
   if (!d) right = `<div class="empty"><h2>Что сейчас в мете?</h2><ol><li>Нажми «Собрать сводку»: Караван загрузит последние убийства с киллборда.</li><li>Выбери тир и бюджет: Караван посчитает цену каждого сета на рынке.</li><li>Сводка будет обновляться раз в сутки.</li></ol></div>`;
   else {
     let list = (d.builds[c.group] || []).slice(0, 60).map(b => Object.assign({}, b, { wr: b.kills / Math.max(1, b.kills + b.deaths), price: setPrice(b, c) }));
     if (c.budget) list = list.filter(b => b.price.sum > 0 && b.price.sum <= c.budget);
+    if (c.sure) list = list.filter(b => b.price.sum > 0);
     list.sort((a, b) => c.sort === 'wr' ? b.wr - a.wr : c.sort === 'price' ? (a.price.sum || 9e15) - (b.price.sum || 9e15) : b.kills - a.kills);
     const SL = ['Оружие', 'Левая рука', 'Шлем', 'Броня', 'Обувь', 'Плащ'];
     right = !list.length ? `<div class="empty"><h2>Под этот бюджет сетов нет</h2><p>Подними бюджет, выбери тир пониже или другой рынок.</p></div>`
-      : `<div class="sheet"><div class="sheethead"><h2>Мета: ${MGROUP.find(x => x[0] === c.group)[1].toLowerCase()}</h2><span>T${c.tier}.${c.ench}, цены: ${esc(cityName(c.city))}${MT.pricing ? ', считаю цены…' : ''}</span></div>
+      : `<div class="sheet"><div class="sheethead"><h2>Мета: ${MGROUP.find(x => x[0] === c.group)[1].toLowerCase()}</h2><span>T${c.tier}.${c.ench}, цены: ${c.city === 'any' ? 'где дешевле' : esc(cityName(c.city))}${MT.pricing ? ', считаю цены…' : ''}</span></div>
       <div class="list">${list.slice(0, 30).map((b, i) => `<div class="item"><div class="mrow">
         <div class="mname"><b>${i + 1}. ${esc(GEAR_NAME[b.parts[0]] || b.parts[0])}</b><div class="imeta">убийств ${b.kills}, смертей ${b.deaths}, побед ${Math.round(b.wr * 100)}%${b.ipn ? ', средний IP ' + Math.round(b.ip / b.ipn) : ''}</div></div>
-        <div class="mnum"><b>${b.price.sum ? fmtShort(b.price.sum) : '—'}</b><span>${b.price.miss ? 'нет цены: ' + b.price.miss : 'цена сета'}</span></div></div>
-        <div class="gear">${b.price.items.map((x, k) => x ? `<span class="gslot" title="${esc(SL[k] + ': ' + (GEAR_NAME[baseOf(x.id)] || baseOf(x.id)) + (x.p ? ', ' + fmt(x.p) : ', нет цены'))}"><b>${c.tier}.${c.ench}</b><img alt="" loading="lazy" src="https://render.albiononline.com/v1/item/${esc(x.id)}.png?size=64" onerror="this.remove()"><i>${x.p ? fmtShort(x.p) : '—'}</i></span>` : `<span class="gslot empty"><b>—</b><i>${SL[k]}</i></span>`).join('')}</div>
+        <div class="mnum"><b>${b.price.sum ? fmtShort(b.price.sum) : '—'}</b><span>${b.price.sum ? 'цена сета' : MT.pricing ? 'считаю…' : 'не уверен в цене ' + b.price.unsure + ' ' + plural(b.price.unsure, 'вещи', 'вещей', 'вещей')}</span></div></div>
+        <div class="gear">${b.price.items.map((x, k) => x ? `<span class="gslot" title="${esc(SL[k] + ': ' + (GEAR_NAME[baseOf(x.id)] || baseOf(x.id)) + (x.sure ? ', ' + fmt(x.p) + (c.city === 'any' ? ', ' + cityName(x.city) : '') : ', не уверен: ' + (x.why || 'нет цены')))}"${x.sure ? '' : ' data-unsure="1"'}><b>${c.tier}.${c.ench}</b><img alt="" loading="lazy" src="https://render.albiononline.com/v1/item/${esc(x.id)}.png?size=64" onerror="this.remove()"><i>${x.sure ? fmtShort(x.p) : '?'}</i></span>` : `<span class="gslot empty" title="${k === 1 ? 'Двуручное оружие, левой руки нет' : SL[k] + ': нет'}"><b>—</b><i>${k === 1 ? '2 руки' : 'нет'}</i></span>`).join('')}</div>
+        ${c.city === 'any' && b.price.sum ? `<div class="imeta">Где брать: ${[...new Set(b.price.items.filter(Boolean).map(x => x.city))].map(cc => esc(cityName(cc)) + ' — ' + b.price.items.map((x, k) => x && x.city === cc ? SL[k].toLowerCase() : '').filter(Boolean).join(', ')).join('; ')}</div>` : ''}
         <div class="imeta">${b.parts.slice(1).map((p, k) => p ? esc(SL[k + 1] + ': ' + (GEAR_NAME[p] || p)) : '').filter(Boolean).join(' · ')}</div></div>`).join('')}</div>
       <p class="imeta" style="margin-top:10px">«Побед» — доля убийств от всех появлений сета в выборке (убийства и смерти). Киллборд видит только бои со смертью, поэтому это ориентир, а не точная статистика.</p></div>`;
   }
@@ -146,6 +171,6 @@ $('#tab-meta').addEventListener('click', e => { const b = e.target.closest('[dat
 $('#tab-meta').addEventListener('change', async e => {
   const t = e.target, c = MT.cfg;
   if (t.id === 'mtGroup') c.group = t.value; else if (t.id === 'mtTier') c.tier = +t.value; else if (t.id === 'mtEnch') c.ench = +t.value;
-  else if (t.id === 'mtBudget') c.budget = parseSilver(t.value); else if (t.id === 'mtCity') c.city = t.value; else if (t.id === 'mtKills') c.kills = +t.value; else if (t.id === 'mtSort') c.sort = t.value; else return;
+  else if (t.id === 'mtBudget') c.budget = parseSilver(t.value); else if (t.id === 'mtCity') c.city = t.value; else if (t.id === 'mtSure') c.sure = t.checked; else if (t.id === 'mtKills') c.kills = +t.value; else if (t.id === 'mtSort') c.sort = t.value; else return;
   mtSave(); renderMeta(); await metaPrice(); renderMeta();
 });
