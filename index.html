@@ -751,6 +751,8 @@ const LOC = LANG === 'uk' ? 'uk-UA' : 'ru-RU';
 
 const UK = {
   /* длинные фразы */
+  'за сутки': 'за добу', 'Данных мало, рейтинг примерный.': 'Даних мало, рейтинг приблизний.',
+  'мало данных': 'мало даних', 'Какое оружие чаще всего убивает, что к нему носят и сколько стоит такой сет.': 'Яка зброя найчастіше вбиває, що до неї носять і скільки коштує такий сет.',
   'Чужих игроков не было': 'Чужих гравців не було', 'Игроков в час: ': 'Гравців на годину: ',
   'Карта до запуска счётчика': 'Карта до запуску лічильника', 'Все': 'Усі', 'Открытый мир': 'Відкритий світ', 'Подземелья': 'Підземелля', 'Цены лута': 'Ціни луту', 'Мин. часов на карте': 'Мін. годин на карті', 'Подземелий пока нет': 'Підземель поки немає',
   'Рейтинг подземелий строится по твоим заходам, общих открытых данных о луте в подземельях нет. Зайди в подземелье, Туманы или Врата ада с запущенным KaravanMeter.exe: после выхода заход появится здесь.': 'Рейтинг підземель будується за твоїми заходами, загальних відкритих даних про лут у підземеллях немає. Зайди в підземелля, Тумани чи Врата пекла із запущеним KaravanMeter.exe: після виходу захід з’явиться тут.',
@@ -2702,6 +2704,30 @@ const mtSave = () => LS.set('karavan.metacfg', MT.cfg);
 const baseOf = t => t ? t.replace(/^T\d_/, '').replace(/@\d$/, '') : '';
 const DAY = 864e5;
 
+/* Мета считается по оружию: для каждого оружия — самые частые вещи в других слотах у тех, кто убивал */
+const MSLOTS = ['OffHand', 'Head', 'Armor', 'Shoes', 'Cape'];
+function addW(W, cat, eq, kind, ip) {
+  if (!eq || !eq.MainHand) return;
+  const wpn = baseOf(eq.MainHand.Type); if (!wpn) return;
+  for (const c of ['all', cat]) {
+    const w = W[c][wpn] || (W[c][wpn] = { kills: 0, deaths: 0, ip: 0, ipn: 0, s: {} });
+    w[kind]++;
+    if (kind !== 'kills') continue;
+    if (ip) { w.ip += ip; w.ipn++; }
+    for (const sl of MSLOTS) { const it = baseOf(eq[sl] && eq[sl].Type) || '-'; const m = w.s[sl] || (w.s[sl] = {}); m[it] = (m[it] || 0) + 1; }
+  }
+}
+function packW(W) {
+  const out = {};
+  for (const c in W) out[c] = Object.entries(W[c]).filter(([, w]) => w.kills >= 2).map(([wpn, w]) => {
+    const alt = {};
+    for (const sl of MSLOTS) { const t = Object.entries(w.s[sl] || {}).sort((a, b) => b[1] - a[1]), n = t.reduce((x, y) => x + y[1], 0) || 1; alt[sl] = t.slice(0, 3).map(([k, v]) => [k === '-' ? '' : k, Math.round(v / n * 100)]); }
+    const pick = sl => (alt[sl][0] || [''])[0];
+    return { parts: [wpn, pick('OffHand'), pick('Head'), pick('Armor'), pick('Shoes')], capes: Object.fromEntries(alt.Cape.filter(x => x[0]).map(x => [x[0], x[1]])), alt, kills: Math.round(w.kills), deaths: Math.round(w.deaths), ip: Math.round(w.ip), ipn: Math.round(w.ipn) };
+  }).sort((a, b) => b.kills - a.kills).slice(0, 120);
+  return out;
+}
+
 async function giPage(offset) {
   const direct = `https://${GI_HOST[cfg.server]}/api/gameinfo/events?limit=51&offset=${offset}`;
   const proxy = `${GM.url}/gi?server=${cfg.server}&limit=51&offset=${offset}`;
@@ -2723,17 +2749,7 @@ async function metaRefresh() {
   if (MT.busy) return;
   MT.busy = true; MT.err = null; renderMeta();
   const seen = new Set(), B = { all: {}, solo: {}, small: {}, large: {} };
-  const add = (cat, eq, kind, ip) => {
-    if (!eq || !eq.MainHand) return;
-    const parts = ['MainHand', 'OffHand', 'Head', 'Armor', 'Shoes'].map(s => baseOf(eq[s] && eq[s].Type));
-    const key = parts.join('|');
-    for (const c of ['all', cat]) {
-      const b = B[c][key] || (B[c][key] = { parts, kills: 0, deaths: 0, ip: 0, ipn: 0, capes: {} });
-      b[kind]++;
-      if (kind === 'kills' && ip) { b.ip += ip; b.ipn++; }
-      const cp = baseOf(eq.Cape && eq.Cape.Type); if (cp && kind === 'kills') b.capes[cp] = (b.capes[cp] || 0) + 1;
-    }
-  };
+  const add = (cat, eq, kind, ip) => addW(B, cat, eq, kind, ip);
   let got = 0;
   try {
     const pages = Math.ceil(MT.cfg.kills / 51);
@@ -2749,7 +2765,7 @@ async function metaRefresh() {
       const bar = $('#mtbar'); if (bar) { bar.hidden = false; bar.firstElementChild.style.width = Math.round((i + 1) / pages * 100) + '%'; }
     }
     if (!got) throw new Error('empty');
-    const pack = {}; for (const c in B) pack[c] = Object.values(B[c]).filter(b => b.kills >= 2).sort((a, b) => b.kills - a.kills).slice(0, 150);
+    const pack = packW(B);
     MT.data = { time: Date.now(), server: cfg.server, events: got, builds: pack, via: MT.via };
     LS.set('karavan.meta', MT.data); MT.prices = {};
   } catch (e) { MT.err = e.message === 'empty' ? 'empty' : 'net'; }
@@ -2809,9 +2825,9 @@ function renderMeta() {
   const el = $('#tab-meta'); if (el.hidden) return;
   const c = MT.cfg, d = MT.data, age = d ? Date.now() - d.time : Infinity;
   const setup = `<section class="setup"><h2>Мета-сеты</h2>
-    <p class="imeta" style="margin:0 0 12px;color:var(--mute)">Сводка по последним убийствам с официального киллборда: какие сеты чаще всего убивают и сколько стоит собрать такой сет.</p>
+    <p class="imeta" style="margin:0 0 12px;color:var(--mute)">Какое оружие чаще всего убивает, что к нему носят и сколько стоит такой сет.</p>
     ${MT.err ? `<div class="note ${MT.err === 'empty' || !d ? 'err' : 'warn'}">${MT.err === 'empty' ? 'Киллборд вернул пустой ответ, попробуй позже.' : d ? 'Киллборд напрямую не открылся, поэтому показываю сводку с сайта Каравана. Она обновляется каждый час.' : 'Не получилось загрузить киллборд. Проверь интернет или запусти KaravanMeter.exe, он открывает киллборд в обход.'}</div>` : ''}
-    ${d ? `<div class="note ${age > DAY ? 'warn' : 'ok'}">Сводка от ${new Date(d.time).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, убийств: ${fmt(d.events)}.${age > DAY ? ' Сводка старше суток.' : ''}</div>` : ''}
+    ${d ? `<div class="note ${age > DAY ? 'warn' : 'ok'}">Сводка от ${new Date(d.time).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}, убийств${d.window ? ' за сутки' : ''}: ${fmt(d.events)}.${d.events < 3000 ? ' Данных мало, рейтинг примерный.' : ''}${age > DAY ? ' Сводка старше суток.' : ''}</div>` : ''}
     <div class="fld"><label for="mtGroup">Какие бои</label><select id="mtGroup">${MGROUP.map(([k, n]) => `<option value="${k}" ${c.group === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
     <div class="two fld"><div><label for="mtTier">Собрать в тире</label><select id="mtTier">${[4, 5, 6, 7, 8].map(t => `<option value="${t}" ${c.tier === t ? 'selected' : ''}>T${t}</option>`).join('')}</select></div>
       <div><label for="mtEnch">Зачарование</label><select id="mtEnch">${[0, 1, 2, 3, 4].map(t => `<option value="${t}" ${c.ench === t ? 'selected' : ''}>.${t}</option>`).join('')}</select></div></div>
@@ -2835,11 +2851,11 @@ function renderMeta() {
     right = !list.length ? `<div class="empty"><h2>Под этот бюджет сетов нет</h2><p>Подними бюджет, выбери тир пониже или другой рынок.</p></div>`
       : `<div class="sheet"><div class="sheethead"><h2>Мета: ${MGROUP.find(x => x[0] === c.group)[1].toLowerCase()}</h2><span>T${c.tier}.${c.ench}, цены: ${c.city === 'any' ? 'где дешевле' : esc(cityName(c.city))}${MT.pricing ? ', считаю цены…' : ''}</span></div>
       <div class="list">${list.slice(0, 30).map((b, i) => `<div class="item"><div class="mrow">
-        <div class="mname"><b>${i + 1}. ${esc(GEAR_NAME[b.parts[0]] || b.parts[0])}</b><div class="imeta">убийств ${b.kills}, смертей ${b.deaths}, побед ${Math.round(b.wr * 100)}%${b.ipn ? ', средний IP ' + Math.round(b.ip / b.ipn) : ''}</div></div>
+        <div class="mname"><b>${i + 1}. ${esc(GEAR_NAME[b.parts[0]] || b.parts[0])}</b>${b.kills < 10 ? ' <span class="tag">мало данных</span>' : ''}<div class="imeta">убийств ${b.kills}, смертей ${b.deaths}, побед ${Math.round(b.wr * 100)}%${b.ipn ? ', средний IP ' + Math.round(b.ip / b.ipn) : ''}</div></div>
         <div class="mnum"><b>${b.price.sum ? fmtShort(b.price.sum) : '—'}</b><span>${b.price.sum ? 'цена сета' : MT.pricing ? 'считаю…' : 'не уверен в цене ' + b.price.unsure + ' ' + plural(b.price.unsure, 'вещи', 'вещей', 'вещей')}</span></div></div>
         <div class="gear">${b.price.items.map((x, k) => x ? `<span class="gslot" title="${esc(SL[k] + ': ' + (GEAR_NAME[baseOf(x.id)] || baseOf(x.id)) + (x.sure ? ', ' + fmt(x.p) + (c.city === 'any' ? ', ' + cityName(x.city) : '') : ', не уверен: ' + (x.why || 'нет цены')))}"${x.sure ? '' : ' data-unsure="1"'}><b>${c.tier}.${c.ench}</b><img alt="" loading="lazy" src="https://render.albiononline.com/v1/item/${esc(x.id)}.png?size=64" onerror="this.remove()"><i>${x.sure ? fmtShort(x.p) : '?'}</i></span>` : `<span class="gslot empty" title="${k === 1 ? 'Двуручное оружие, левой руки нет' : SL[k] + ': нет'}"><b>—</b><i>${k === 1 ? '2 руки' : 'нет'}</i></span>`).join('')}</div>
         ${c.city === 'any' && b.price.sum ? `<div class="imeta">Где брать: ${[...new Set(b.price.items.filter(Boolean).map(x => x.city))].map(cc => esc(cityName(cc)) + ' — ' + b.price.items.map((x, k) => x && x.city === cc ? SL[k].toLowerCase() : '').filter(Boolean).join(', ')).join('; ')}</div>` : ''}
-        <div class="imeta">${b.parts.slice(1).map((p, k) => p ? esc(SL[k + 1] + ': ' + (GEAR_NAME[p] || p)) : '').filter(Boolean).join(' · ')}</div></div>`).join('')}</div>
+        <div class="imeta">${b.alt ? ['Head', 'Armor', 'Shoes'].map(sl => (b.alt[sl] || []).filter(x => x[0]).slice(0, 2).map(([p, pc]) => esc(GEAR_NAME[p] || p) + ' ' + pc + '%').join(', ')).filter(Boolean).join(' · ') : b.parts.slice(1).map((p, k) => p ? esc(SL[k + 1] + ': ' + (GEAR_NAME[p] || p)) : '').filter(Boolean).join(' · ')}</div></div>`).join('')}</div>
       <p class="imeta" style="margin-top:10px">«Побед» — доля убийств от всех появлений сета в выборке (убийства и смерти). Киллборд видит только бои со смертью, поэтому это ориентир, а не точная статистика.</p></div>`;
   }
   el.innerHTML = setup + `<section aria-live="off">${right}</section>`;
