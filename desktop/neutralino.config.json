@@ -1,0 +1,37 @@
+{
+  "applicationId": "app.karavan.albion",
+  "version": "1.0.0",
+  "defaultMode": "window",
+  "port": 48712,
+  "documentRoot": "/resources/",
+  "url": "/",
+  "enableServer": true,
+  "enableNativeAPI": false,
+  "tokenSecurity": "one-time",
+  "logging": {
+    "enabled": false,
+    "writeToLogFile": false
+  },
+  "modes": {
+    "window": {
+      "title": "Караван",
+      "width": 1280,
+      "height": 860,
+      "minWidth": 380,
+      "minHeight": 500,
+      "center": true,
+      "resizable": true,
+      "exitProcessOnClose": true,
+      "enableInspector": false,
+      "useSavedState": true
+    }
+  },
+  "cli": {
+    "binaryName": "Karavan",
+    "resourcesPath": "/resources/",
+    "extensionsPath": "/extensions/",
+    "binaryVersion": "nightly",
+    "clientVersion": "",
+    "frontendLibrary": null
+  }
+}
