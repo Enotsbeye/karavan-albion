@@ -91,9 +91,13 @@ func TestMapsAndLoot(t *testing.T) {
 	onEvent(1, map[byte]interface{}{252: int16(278), 1: "MOB_X", 2: "Enot", 3: true, 4: int32(0), 5: int32(500)})
 	onEvent(1, map[byte]interface{}{252: int16(62), 0: int64(100), 3: int64(20000000), 4: int64(1000000), 5: int64(0)})
 	onEvent(1, map[byte]interface{}{252: int16(82), 2: int64(150000000)})
+	onEvent(1, map[byte]interface{}{252: int16(29), 0: int64(301), 1: "Ganker1", 7: gb(9)})
+	onEvent(1, map[byte]interface{}{252: int16(29), 0: int64(301), 1: "Ganker1", 7: gb(9)})
+	onEvent(1, map[byte]interface{}{252: int16(164), 1: int64(100), 2: "Enot", 9: int64(301), 10: "Ganker1"})
+	onEvent(1, map[byte]interface{}{252: int16(164), 1: int64(301), 2: "Ganker1", 9: int64(100), 10: "Enot"})
 	st.mu.Lock()
 	v := st.visit
-	if v == nil || v.Map != "4325" || v.Loot["T6_MAIN_SWORD"] != 2 || v.Loot["T4_BAG"] != 0 || v.Silver != 500+1900 || v.Fame != 15000 {
+	if v == nil || v.Map != "4325" || v.Loot["T6_MAIN_SWORD"] != 2 || v.Loot["T4_BAG"] != 0 || v.Silver != 500+1900 || v.Fame != 15000 || v.Players != 1 || v.Deaths != 1 || v.Kills != 1 || v.PvP != 2 {
 		st.mu.Unlock()
 		t.Fatalf("заход: %+v", v)
 	}

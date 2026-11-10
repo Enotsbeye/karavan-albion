@@ -65,11 +65,11 @@ function mpAggregate() {
   for (const v of (MP.data && MP.data.visits) || []) {
     const h = (v.end - v.start) / 36e5; if (h <= 0) continue;
     const info = mapInfo(v.map), k = info.key + '|' + catOf(v.party);
-    const a = out[k] || (out[k] = { info, cat: catOf(v.party), h: 0, val: 0, fame: 0, n: 0, loot: {} });
-    const val = visitValue(v); a.h += h; a.val += val.total; a.fame += v.fame || 0; a.n++;
+    const a = out[k] || (out[k] = { info, cat: catOf(v.party), h: 0, val: 0, fame: 0, n: 0, loot: {}, deaths: 0, kills: 0, pvp: 0, players: 0 });
+    const val = visitValue(v); a.h += h; a.val += val.total; a.fame += v.fame || 0; a.n++; a.deaths += v.deaths || 0; a.kills += v.kills || 0; a.pvp += v.pvp || 0; a.players += v.players || 0;
     for (const u in (v.loot || {})) a.loot[u] = (a.loot[u] || 0) + (MP.prices[u + '|' + MP.cfg.city] || 0) * v.loot[u];
   }
-  return Object.values(out).map(a => Object.assign(a, { ph: a.val / a.h, fh: a.fame / a.h }));
+  return Object.values(out).map(a => Object.assign(a, { ph: a.val / a.h, fh: a.fame / a.h, danger: a.players / a.h, deathsH: a.deaths / a.h }));
 }
 
 function renderMaps() {
@@ -98,8 +98,9 @@ function renderMaps() {
         <div class="mname"><b>${i + 1}. ${esc(a.info.name)}</b><div class="imeta">${esc(a.info.zone)}${a.info.tier ? ' T' + a.info.tier : ''}${a.info.q ? ', уровень ' + a.info.q : ''} · заходов ${a.n}, ${a.h.toFixed(1).replace('.', ',')} ч${a.h < 1 ? ' — мало данных' : ''}</div></div>
         <div class="mnum"><b>${fmtShort(a.ph)}</b><span>в час · слава ${fmtShort(a.fh)}</span></div></div>
         <div class="mbar"><i class="d" style="width:${Math.max(2, a.ph / top * 100).toFixed(1)}%"></i></div>
+        <div class="imeta">Опасность: ${a.players ? fmt(a.danger) + ' чужих игроков в час' : 'чужих игроков не встречал'}${a.deaths ? ', ты или пати умерли ' + a.deaths + ' ' + plural(a.deaths, 'раз', 'раза', 'раз') : ''}${a.kills ? ', убили игроков: ' + a.kills : ''}${a.pvp ? ', всего смертей на карте: ' + a.pvp : ''}</div>
         ${lt.length ? `<div class="imeta">Больше всего принесли: ${lt.map(([u, v]) => esc(itemLabel(parseItem(u), -1) + ' ' + (parseItem(u) || {}).t + '.' + (parseItem(u) || {}).e) + ' (' + fmtShort(v) + ')').join(', ')}</div>` : ''}</div>`; }).join('')}</div>
-      <p class="imeta" style="margin-top:10px">Учтены лут, который подобрал ты или твоя пати, и серебро с мобов после налогов. Смерти и потери снаряжения не вычитаются.</p></div>`;
+      <p class="imeta" style="margin-top:10px">Учтены лут, который подобрал ты или твоя пати, и серебро с мобов после налогов. Опасность — сколько чужих игроков ты встречал и сколько смертей видел на этой карте. Потерянное снаряжение не вычитается.</p></div>`;
   }
   el.innerHTML = setup + `<section aria-live="off">${right}</section>`;
 }

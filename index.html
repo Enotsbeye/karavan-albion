@@ -232,6 +232,9 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 .riskbig b{font:400 34px/1 var(--display);color:var(--pink);margin-right:8px}.riskbig span{font-size:13px;color:var(--pmute)}
 .linkbtn{background:none;border:0;padding:0;color:var(--seal);font-weight:600;text-decoration:underline;font-size:inherit}
 .two label{display:block;font-size:13px;color:var(--mute);margin-bottom:5px}.two select{width:100%}
+.stepper{display:grid;grid-template-columns:40px 1fr 40px;gap:6px}
+.stepper button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;font-size:20px;line-height:1;height:40px;color:var(--bone)}
+.stepper input{text-align:center;font-weight:600}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -650,6 +653,15 @@ const LOC = LANG === 'uk' ? 'uk-UA' : 'ru-RU';
 
 const UK = {
   /* длинные фразы */
+  'Меньше': 'Менше', 'Больше': 'Більше',
+  'Укажи кнопками + слева, сколько у тебя полей, садов, пастбищ и питомников, и план соберётся.': 'Вкажи кнопками +, скільки в тебе полів, садів, пасовищ і розплідників, і план збереться.',
+  'Опасность:': 'Небезпека:', 'чужих игроков в час': 'чужих гравців за годину', 'чужих игроков не встречал': 'чужих гравців не зустрічав', 'ты или пати умерли': 'ти чи паті померли', 'убили игроков:': 'вбили гравців:', 'всего смертей на карте:': 'усього смертей на карті:',
+  'Учтены лут, который подобрал ты или твоя пати, и серебро с мобов после налогов. Опасность — сколько чужих игроков ты встречал и сколько смертей видел на этой карте. Потерянное снаряжение не вычитается.': 'Враховано лут, який підібрав ти чи твоя паті, і срібло з мобів після податків. Небезпека — скільки чужих гравців ти зустрічав і скільки смертей бачив на цій карті. Втрачене спорядження не віднімається.',
+  'Активность сервера ещё не замерена.': 'Активність сервера ще не заміряно.', 'Сейчас на сервере': 'Зараз на сервері', 'убийств в минуту': 'вбивств за хвилину',
+  'раза больше обычного для этого часа, поэтому риск повышен с': 'рази більше звичайного для цієї години, тому ризик підвищено з',
+  'раза меньше обычного для этого часа, поэтому риск снижен с': 'рази менше звичайного для цієї години, тому ризик знижено з',
+  'Для сравнения с обычным уровнем нужно ещё': 'Для порівняння зі звичайним рівнем потрібно ще', 'в этот же час в другие дни': 'о цій же годині в інші дні',
+  'замер': 'замір', 'замера': 'заміри', 'замеров': 'замірів', 'Похоже на прайм-тайм': 'Схоже на прайм-тайм', 'это в': 'це в',
   'Ты задал шанс вручную.': 'Ти задав шанс вручну.', 'Считать по журналу': 'Рахувати за журналом', 'Задать вручную': 'Задати вручну',
   'По твоему журналу: на этом маршруте': 'За твоїм журналом: на цьому маршруті', 'груз потерян': 'вантаж втрачено',
   'Рейсов пока мало, поэтому оценка смешана с обычным риском маршрута.': 'Рейсів поки мало, тому оцінка змішана зі звичайним ризиком маршруту.',
@@ -1335,6 +1347,7 @@ async function scan(demo, quiet) {
   if (S.scan && S.scan.route !== route) { S.locked.clear(); S.excluded.clear(); }
   S.scan = { key, route, time: now, prices, hist, items, demo: !!demo, src: cfg.src, dst: cfg.dst };
   S.open = null; updateGo(); recalc();
+  if (!demo && !sameCity()) activityRefresh();
   if (quiet) toast('Цены обновлены ' + hhmm(now)); else if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -1395,8 +1408,37 @@ function routeRisk(src, dst) {
   if (src === 'Caerleon' && dst === 'Black Market') return { p: 0, n: 0, lost: 0, src: 'safe' };
   if (cfg.manualRisk) return { p: cfg.gank, n: 0, lost: 0, src: 'manual' };
   const j = LS.get('karavan.journal', []).filter(r => r.src === src && r.dst === dst && (r.server || 'europe') === cfg.server && !r.demo);
-  const n = j.length, lost = j.filter(r => r.lost).length, prior = riskDefault(src, dst) / 100, k = 5;
-  return { p: Math.round((lost + prior * k) / (n + k) * 1000) / 10, n, lost, src: n ? 'journal' : 'default' };
+  const n = j.length, lost = j.filter(r => r.lost).length, prior = riskDefault(src, dst) / 100, k = 5, act = activityNow();
+  const base = (lost + prior * k) / (n + k), p = Math.min(0.6, base * (act ? act.factor : 1));
+  return { p: Math.round(p * 1000) / 10, base: Math.round(base * 1000) / 10, n, lost, act, src: n ? 'journal' : 'default' };
+}
+/* Активность сервера: убийства в минуту по киллборду сейчас против обычных для этого часа (прайм-тайм) */
+const ACT = { busy: false };
+async function activityRefresh() {
+  if (ACT.busy || typeof giPage !== 'function') return;
+  const store = LS.get('karavan.activity', []), last = store.filter(x => x.server === cfg.server).slice(-1)[0];
+  if (last && Date.now() - last.ts < 10 * 60000) return;
+  ACT.busy = true;
+  try {
+    const evs = [].concat(await giPage(0), await giPage(51)).filter(e => e && e.TimeStamp);
+    const ts = evs.map(e => Date.parse(e.TimeStamp)).filter(isFinite).sort((a, b) => a - b);
+    if (ts.length > 20) {
+      const mins = Math.max(1, (ts[ts.length - 1] - ts[0]) / 6e4);
+      const fresh = Date.now() - ts[ts.length - 1] < 60 * 60000;
+      if (fresh) { store.push({ ts: Date.now(), server: cfg.server, hour: new Date().getUTCHours(), rate: ts.length / mins }); LS.set('karavan.activity', store.filter(x => Date.now() - x.ts < 30 * 864e5).slice(-2000)); }
+    }
+  } catch (e) { }
+  ACT.busy = false;
+  if (S.scan) recalc();
+}
+function activityNow() {
+  const store = LS.get('karavan.activity', []).filter(x => x.server === cfg.server), last = store.slice(-1)[0];
+  if (!last || Date.now() - last.ts > 60 * 60000) return null;
+  const same = store.filter(x => x !== last && x.hour === last.hour).map(x => x.rate).sort((a, b) => a - b);
+  const all = store.filter(x => x !== last).map(x => x.rate).sort((a, b) => a - b);
+  const base = same.length >= 3 ? same[Math.floor(same.length / 2)] : null, day = all.length >= 6 ? all[Math.floor(all.length / 2)] : null;
+  const factor = base ? Math.min(2.5, Math.max(0.5, last.rate / base)) : 1;
+  return { rate: last.rate, base, day, factor, samples: same.length, prime: day ? last.rate > day * 1.25 : null };
 }
 function planCfg() { const base = Object.assign({}, cfg, S.scan ? { src: S.scan.src, dst: S.scan.dst } : {}); base.riskP = routeRisk(base.src, base.dst).p / 100; return base; }
 function recalc() {
@@ -1488,7 +1530,10 @@ function riskSourceHTML(rk) {
   if (rk.src === 'manual') return `Ты задал шанс вручную. <button type="button" class="linkbtn" data-act="riskauto">Считать по журналу</button>`;
   const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов пока мало, поэтому оценка смешана с обычным риском маршрута.' : ''}`
     : 'Рейсов по этому маршруту в журнале ещё нет, поэтому взят обычный риск маршрута. Завершай рейсы через «Завершить рейс», и оценка станет твоей.';
-  return base + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
+  const a = rk.act;
+  const actTxt = !a ? ' Активность сервера ещё не замерена.'
+    : ` Сейчас на сервере ${a.rate.toFixed(1).replace('.', ',')} убийств в минуту${a.base ? `, это в ${a.factor.toFixed(1).replace('.', ',')} раза ${a.factor >= 1 ? 'больше' : 'меньше'} обычного для этого часа, поэтому риск ${a.factor >= 1 ? 'повышен' : 'снижен'} с ${String(rk.base).replace('.', ',')}%` : `. Для сравнения с обычным уровнем нужно ещё ${3 - a.samples} ${plural(3 - a.samples, 'замер', 'замера', 'замеров')} в этот же час в другие дни`}${a.prime ? '. Похоже на прайм-тайм' : ''}.`;
+  return base + actTxt + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
 }
 
 function renderResult() {
@@ -2031,8 +2076,10 @@ $('#tab-craft').addEventListener('change', e => {
 <script>
 "use strict";
 /* ===== Караван: остров ===== */
-const FDEF = { city: 'Martlock', farm: 2, herb: 1, pasture: 1, kennel: 0, slots: 9, focus: false, mult: 1, ownFood: true, buyOrder: true };
-const FM = { cfg: Object.assign({}, FDEF, LS.get('karavan.farm', {})), busy: false, scan: null, error: null };
+const FDEF = { city: 'Martlock', farm: 0, herb: 0, pasture: 0, kennel: 0, slots: 9, focus: false, mult: 1, ownFood: true, buyOrder: true, v: 2 };
+const FSAVED = LS.get('karavan.farm', {});
+const FM = { cfg: Object.assign({}, FDEF, FSAVED), busy: false, scan: null, error: null };
+if (FSAVED.v !== 2) Object.assign(FM.cfg, { farm: 0, herb: 0, pasture: 0, kennel: 0, v: 2 });
 const fSave = () => LS.set('karavan.farm', FM.cfg);
 const FKIND = { farm: 'Поле', herbgarden: 'Сад трав', pasture: 'Пастбище', kennel: 'Питомник' };
 
@@ -2120,7 +2167,7 @@ async function farmScan(demo) {
 }
 
 function farmSetupHTML() {
-  const c = FM.cfg, num = (id, label, v, min, max, step) => `<div><label for="${id}">${label}</label><input id="${id}" type="number" min="${min}" max="${max}" step="${step || 1}" value="${v}"></div>`;
+  const c = FM.cfg, num = (id, label, v, min, max, step) => `<div><label for="${id}">${label}</label><div class="stepper"><button type="button" data-fs="-1" data-for="${id}" aria-label="Меньше">−</button><input id="${id}" type="text" inputmode="decimal" data-min="${min}" data-max="${max}" data-step="${step || 1}" value="${String(v).replace('.', ',')}"><button type="button" data-fs="1" data-for="${id}" aria-label="Больше">+</button></div></div>`;
   return `<section class="setup"><h2>Мой остров</h2>
     <div class="fld"><label for="fCity">Рынок, где покупаешь и продаёшь</label><select id="fCity">${CITIES.filter(x => !x.sellOnly).map(x => `<option value="${esc(x.id)}" ${x.id === c.city ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div>
     <div class="two fld">${num('fFarm', 'Полей', c.farm, 0, 30)}${num('fHerb', 'Садов трав', c.herb, 0, 30)}</div>
@@ -2146,7 +2193,7 @@ function farmResultHTML() {
   for (const [k, n] of groups) { const best = rows.filter(r => r.kind === k).sort((a, b) => b.perDay - a.perDay)[0]; if (best && n > 0 && best.perDay > 0) { const v = best.perDay * c.slots * n; total += v; plan.push(`${FKIND[k]} ×${n}: ${best.name} ${'T' + best.t}, +${fmtShort(v)} в день`); } }
   h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
     <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${c.focus ? ' С фокусом.' : ''}</small></div>
-    <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Добавь участки, чтобы собрать план.'}</div></div>`;
+    <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Укажи кнопками + слева, сколько у тебя полей, садов, пастбищ и питомников, и план соберётся.'}</div></div>`;
   for (const [k] of groups) {
     const list = rows.filter(r => r.kind === k).sort((a, b) => b.perDay - a.perDay).slice(0, 8); if (!list.length) continue;
     h += `<div class="list"><div class="listhead"><h3>${FKIND[k]}</h3><span>прибыль в день с одного места</span></div>${list.map(r => `<div class="item"><div class="irow" style="grid-template-columns:auto 1fr auto">
@@ -2158,10 +2205,23 @@ function farmResultHTML() {
   return h;
 }
 function renderFarm() { const el = $('#tab-farm'); if (el.hidden) return; el.innerHTML = farmSetupHTML() + `<section aria-live="polite">${farmResultHTML()}</section>`; }
-$('#tab-farm').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; if (b.dataset.f === 'scan') farmScan(false); if (b.dataset.f === 'demo') farmScan(true); });
+const FMAP = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult' };
+function farmSetNum(input, v) {
+  const min = +input.dataset.min, max = +input.dataset.max, step = +input.dataset.step;
+  v = Math.min(max, Math.max(min, Math.round(v / step) * step));
+  v = Math.round(v * 100) / 100;
+  FM.cfg[FMAP[input.id]] = v; fSave();
+  const id = input.id; renderFarm(); const again = document.getElementById(id); if (again && document.activeElement !== again) again.blur();
+}
+$('#tab-farm').addEventListener('click', e => {
+  const s = e.target.closest('[data-fs]');
+  if (s) { const inp = document.getElementById(s.dataset.for); const cur = parseFloat(String(inp.value).replace(',', '.')) || 0; return farmSetNum(inp, cur + (+s.dataset.fs) * (+inp.dataset.step)); }
+  const b = e.target.closest('[data-f]'); if (!b) return; if (b.dataset.f === 'scan') farmScan(false); if (b.dataset.f === 'demo') farmScan(true);
+});
+$('#tab-farm').addEventListener('keydown', e => { if (e.key === 'Enter' && FMAP[e.target.id]) e.target.blur(); });
 $('#tab-farm').addEventListener('change', e => {
-  const t = e.target, c = FM.cfg, map = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult' };
-  if (map[t.id]) { const v = parseFloat(String(t.value).replace(',', '.')); if (isFinite(v) && v >= 0) c[map[t.id]] = v; }
+  const t = e.target, c = FM.cfg;
+  if (FMAP[t.id]) { const v = parseFloat(String(t.value).replace(',', '.')); if (isFinite(v) && v >= 0) return farmSetNum(t, v); return renderFarm(); }
   else if (t.id === 'fFocus') c.focus = t.checked;
   else if (t.id === 'fOwn') c.ownFood = t.checked;
   else if (t.id === 'fBuyO') c.buyOrder = t.checked;
@@ -2355,11 +2415,11 @@ function mpAggregate() {
   for (const v of (MP.data && MP.data.visits) || []) {
     const h = (v.end - v.start) / 36e5; if (h <= 0) continue;
     const info = mapInfo(v.map), k = info.key + '|' + catOf(v.party);
-    const a = out[k] || (out[k] = { info, cat: catOf(v.party), h: 0, val: 0, fame: 0, n: 0, loot: {} });
-    const val = visitValue(v); a.h += h; a.val += val.total; a.fame += v.fame || 0; a.n++;
+    const a = out[k] || (out[k] = { info, cat: catOf(v.party), h: 0, val: 0, fame: 0, n: 0, loot: {}, deaths: 0, kills: 0, pvp: 0, players: 0 });
+    const val = visitValue(v); a.h += h; a.val += val.total; a.fame += v.fame || 0; a.n++; a.deaths += v.deaths || 0; a.kills += v.kills || 0; a.pvp += v.pvp || 0; a.players += v.players || 0;
     for (const u in (v.loot || {})) a.loot[u] = (a.loot[u] || 0) + (MP.prices[u + '|' + MP.cfg.city] || 0) * v.loot[u];
   }
-  return Object.values(out).map(a => Object.assign(a, { ph: a.val / a.h, fh: a.fame / a.h }));
+  return Object.values(out).map(a => Object.assign(a, { ph: a.val / a.h, fh: a.fame / a.h, danger: a.players / a.h, deathsH: a.deaths / a.h }));
 }
 
 function renderMaps() {
@@ -2388,8 +2448,9 @@ function renderMaps() {
         <div class="mname"><b>${i + 1}. ${esc(a.info.name)}</b><div class="imeta">${esc(a.info.zone)}${a.info.tier ? ' T' + a.info.tier : ''}${a.info.q ? ', уровень ' + a.info.q : ''} · заходов ${a.n}, ${a.h.toFixed(1).replace('.', ',')} ч${a.h < 1 ? ' — мало данных' : ''}</div></div>
         <div class="mnum"><b>${fmtShort(a.ph)}</b><span>в час · слава ${fmtShort(a.fh)}</span></div></div>
         <div class="mbar"><i class="d" style="width:${Math.max(2, a.ph / top * 100).toFixed(1)}%"></i></div>
+        <div class="imeta">Опасность: ${a.players ? fmt(a.danger) + ' чужих игроков в час' : 'чужих игроков не встречал'}${a.deaths ? ', ты или пати умерли ' + a.deaths + ' ' + plural(a.deaths, 'раз', 'раза', 'раз') : ''}${a.kills ? ', убили игроков: ' + a.kills : ''}${a.pvp ? ', всего смертей на карте: ' + a.pvp : ''}</div>
         ${lt.length ? `<div class="imeta">Больше всего принесли: ${lt.map(([u, v]) => esc(itemLabel(parseItem(u), -1) + ' ' + (parseItem(u) || {}).t + '.' + (parseItem(u) || {}).e) + ' (' + fmtShort(v) + ')').join(', ')}</div>` : ''}</div>`; }).join('')}</div>
-      <p class="imeta" style="margin-top:10px">Учтены лут, который подобрал ты или твоя пати, и серебро с мобов после налогов. Смерти и потери снаряжения не вычитаются.</p></div>`;
+      <p class="imeta" style="margin-top:10px">Учтены лут, который подобрал ты или твоя пати, и серебро с мобов после налогов. Опасность — сколько чужих игроков ты встречал и сколько смертей видел на этой карте. Потерянное снаряжение не вычитается.</p></div>`;
   }
   el.innerHTML = setup + `<section aria-live="off">${right}</section>`;
 }

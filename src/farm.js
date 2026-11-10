@@ -1,7 +1,9 @@
 "use strict";
 /* ===== Караван: остров ===== */
-const FDEF = { city: 'Martlock', farm: 2, herb: 1, pasture: 1, kennel: 0, slots: 9, focus: false, mult: 1, ownFood: true, buyOrder: true };
-const FM = { cfg: Object.assign({}, FDEF, LS.get('karavan.farm', {})), busy: false, scan: null, error: null };
+const FDEF = { city: 'Martlock', farm: 0, herb: 0, pasture: 0, kennel: 0, slots: 9, focus: false, mult: 1, ownFood: true, buyOrder: true, v: 2 };
+const FSAVED = LS.get('karavan.farm', {});
+const FM = { cfg: Object.assign({}, FDEF, FSAVED), busy: false, scan: null, error: null };
+if (FSAVED.v !== 2) Object.assign(FM.cfg, { farm: 0, herb: 0, pasture: 0, kennel: 0, v: 2 });
 const fSave = () => LS.set('karavan.farm', FM.cfg);
 const FKIND = { farm: 'Поле', herbgarden: 'Сад трав', pasture: 'Пастбище', kennel: 'Питомник' };
 
@@ -89,7 +91,7 @@ async function farmScan(demo) {
 }
 
 function farmSetupHTML() {
-  const c = FM.cfg, num = (id, label, v, min, max, step) => `<div><label for="${id}">${label}</label><input id="${id}" type="number" min="${min}" max="${max}" step="${step || 1}" value="${v}"></div>`;
+  const c = FM.cfg, num = (id, label, v, min, max, step) => `<div><label for="${id}">${label}</label><div class="stepper"><button type="button" data-fs="-1" data-for="${id}" aria-label="Меньше">−</button><input id="${id}" type="text" inputmode="decimal" data-min="${min}" data-max="${max}" data-step="${step || 1}" value="${String(v).replace('.', ',')}"><button type="button" data-fs="1" data-for="${id}" aria-label="Больше">+</button></div></div>`;
   return `<section class="setup"><h2>Мой остров</h2>
     <div class="fld"><label for="fCity">Рынок, где покупаешь и продаёшь</label><select id="fCity">${CITIES.filter(x => !x.sellOnly).map(x => `<option value="${esc(x.id)}" ${x.id === c.city ? 'selected' : ''}>${x.name}</option>`).join('')}</select></div>
     <div class="two fld">${num('fFarm', 'Полей', c.farm, 0, 30)}${num('fHerb', 'Садов трав', c.herb, 0, 30)}</div>
@@ -115,7 +117,7 @@ function farmResultHTML() {
   for (const [k, n] of groups) { const best = rows.filter(r => r.kind === k).sort((a, b) => b.perDay - a.perDay)[0]; if (best && n > 0 && best.perDay > 0) { const v = best.perDay * c.slots * n; total += v; plan.push(`${FKIND[k]} ×${n}: ${best.name} ${'T' + best.t}, +${fmtShort(v)} в день`); } }
   h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
     <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${c.focus ? ' С фокусом.' : ''}</small></div>
-    <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Добавь участки, чтобы собрать план.'}</div></div>`;
+    <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Укажи кнопками + слева, сколько у тебя полей, садов, пастбищ и питомников, и план соберётся.'}</div></div>`;
   for (const [k] of groups) {
     const list = rows.filter(r => r.kind === k).sort((a, b) => b.perDay - a.perDay).slice(0, 8); if (!list.length) continue;
     h += `<div class="list"><div class="listhead"><h3>${FKIND[k]}</h3><span>прибыль в день с одного места</span></div>${list.map(r => `<div class="item"><div class="irow" style="grid-template-columns:auto 1fr auto">
@@ -127,10 +129,23 @@ function farmResultHTML() {
   return h;
 }
 function renderFarm() { const el = $('#tab-farm'); if (el.hidden) return; el.innerHTML = farmSetupHTML() + `<section aria-live="polite">${farmResultHTML()}</section>`; }
-$('#tab-farm').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; if (b.dataset.f === 'scan') farmScan(false); if (b.dataset.f === 'demo') farmScan(true); });
+const FMAP = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult' };
+function farmSetNum(input, v) {
+  const min = +input.dataset.min, max = +input.dataset.max, step = +input.dataset.step;
+  v = Math.min(max, Math.max(min, Math.round(v / step) * step));
+  v = Math.round(v * 100) / 100;
+  FM.cfg[FMAP[input.id]] = v; fSave();
+  const id = input.id; renderFarm(); const again = document.getElementById(id); if (again && document.activeElement !== again) again.blur();
+}
+$('#tab-farm').addEventListener('click', e => {
+  const s = e.target.closest('[data-fs]');
+  if (s) { const inp = document.getElementById(s.dataset.for); const cur = parseFloat(String(inp.value).replace(',', '.')) || 0; return farmSetNum(inp, cur + (+s.dataset.fs) * (+inp.dataset.step)); }
+  const b = e.target.closest('[data-f]'); if (!b) return; if (b.dataset.f === 'scan') farmScan(false); if (b.dataset.f === 'demo') farmScan(true);
+});
+$('#tab-farm').addEventListener('keydown', e => { if (e.key === 'Enter' && FMAP[e.target.id]) e.target.blur(); });
 $('#tab-farm').addEventListener('change', e => {
-  const t = e.target, c = FM.cfg, map = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult' };
-  if (map[t.id]) { const v = parseFloat(String(t.value).replace(',', '.')); if (isFinite(v) && v >= 0) c[map[t.id]] = v; }
+  const t = e.target, c = FM.cfg;
+  if (FMAP[t.id]) { const v = parseFloat(String(t.value).replace(',', '.')); if (isFinite(v) && v >= 0) return farmSetNum(t, v); return renderFarm(); }
   else if (t.id === 'fFocus') c.focus = t.checked;
   else if (t.id === 'fOwn') c.ownFood = t.checked;
   else if (t.id === 'fBuyO') c.buyOrder = t.checked;

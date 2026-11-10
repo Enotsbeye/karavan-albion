@@ -159,6 +159,7 @@ async function scan(demo, quiet) {
   if (S.scan && S.scan.route !== route) { S.locked.clear(); S.excluded.clear(); }
   S.scan = { key, route, time: now, prices, hist, items, demo: !!demo, src: cfg.src, dst: cfg.dst };
   S.open = null; updateGo(); recalc();
+  if (!demo && !sameCity()) activityRefresh();
   if (quiet) toast('Цены обновлены ' + hhmm(now)); else if (window.matchMedia('(max-width: 979px)').matches) $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -219,8 +220,37 @@ function routeRisk(src, dst) {
   if (src === 'Caerleon' && dst === 'Black Market') return { p: 0, n: 0, lost: 0, src: 'safe' };
   if (cfg.manualRisk) return { p: cfg.gank, n: 0, lost: 0, src: 'manual' };
   const j = LS.get('karavan.journal', []).filter(r => r.src === src && r.dst === dst && (r.server || 'europe') === cfg.server && !r.demo);
-  const n = j.length, lost = j.filter(r => r.lost).length, prior = riskDefault(src, dst) / 100, k = 5;
-  return { p: Math.round((lost + prior * k) / (n + k) * 1000) / 10, n, lost, src: n ? 'journal' : 'default' };
+  const n = j.length, lost = j.filter(r => r.lost).length, prior = riskDefault(src, dst) / 100, k = 5, act = activityNow();
+  const base = (lost + prior * k) / (n + k), p = Math.min(0.6, base * (act ? act.factor : 1));
+  return { p: Math.round(p * 1000) / 10, base: Math.round(base * 1000) / 10, n, lost, act, src: n ? 'journal' : 'default' };
+}
+/* Активность сервера: убийства в минуту по киллборду сейчас против обычных для этого часа (прайм-тайм) */
+const ACT = { busy: false };
+async function activityRefresh() {
+  if (ACT.busy || typeof giPage !== 'function') return;
+  const store = LS.get('karavan.activity', []), last = store.filter(x => x.server === cfg.server).slice(-1)[0];
+  if (last && Date.now() - last.ts < 10 * 60000) return;
+  ACT.busy = true;
+  try {
+    const evs = [].concat(await giPage(0), await giPage(51)).filter(e => e && e.TimeStamp);
+    const ts = evs.map(e => Date.parse(e.TimeStamp)).filter(isFinite).sort((a, b) => a - b);
+    if (ts.length > 20) {
+      const mins = Math.max(1, (ts[ts.length - 1] - ts[0]) / 6e4);
+      const fresh = Date.now() - ts[ts.length - 1] < 60 * 60000;
+      if (fresh) { store.push({ ts: Date.now(), server: cfg.server, hour: new Date().getUTCHours(), rate: ts.length / mins }); LS.set('karavan.activity', store.filter(x => Date.now() - x.ts < 30 * 864e5).slice(-2000)); }
+    }
+  } catch (e) { }
+  ACT.busy = false;
+  if (S.scan) recalc();
+}
+function activityNow() {
+  const store = LS.get('karavan.activity', []).filter(x => x.server === cfg.server), last = store.slice(-1)[0];
+  if (!last || Date.now() - last.ts > 60 * 60000) return null;
+  const same = store.filter(x => x !== last && x.hour === last.hour).map(x => x.rate).sort((a, b) => a - b);
+  const all = store.filter(x => x !== last).map(x => x.rate).sort((a, b) => a - b);
+  const base = same.length >= 3 ? same[Math.floor(same.length / 2)] : null, day = all.length >= 6 ? all[Math.floor(all.length / 2)] : null;
+  const factor = base ? Math.min(2.5, Math.max(0.5, last.rate / base)) : 1;
+  return { rate: last.rate, base, day, factor, samples: same.length, prime: day ? last.rate > day * 1.25 : null };
 }
 function planCfg() { const base = Object.assign({}, cfg, S.scan ? { src: S.scan.src, dst: S.scan.dst } : {}); base.riskP = routeRisk(base.src, base.dst).p / 100; return base; }
 function recalc() {
@@ -312,7 +342,10 @@ function riskSourceHTML(rk) {
   if (rk.src === 'manual') return `Ты задал шанс вручную. <button type="button" class="linkbtn" data-act="riskauto">Считать по журналу</button>`;
   const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов пока мало, поэтому оценка смешана с обычным риском маршрута.' : ''}`
     : 'Рейсов по этому маршруту в журнале ещё нет, поэтому взят обычный риск маршрута. Завершай рейсы через «Завершить рейс», и оценка станет твоей.';
-  return base + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
+  const a = rk.act;
+  const actTxt = !a ? ' Активность сервера ещё не замерена.'
+    : ` Сейчас на сервере ${a.rate.toFixed(1).replace('.', ',')} убийств в минуту${a.base ? `, это в ${a.factor.toFixed(1).replace('.', ',')} раза ${a.factor >= 1 ? 'больше' : 'меньше'} обычного для этого часа, поэтому риск ${a.factor >= 1 ? 'повышен' : 'снижен'} с ${String(rk.base).replace('.', ',')}%` : `. Для сравнения с обычным уровнем нужно ещё ${3 - a.samples} ${plural(3 - a.samples, 'замер', 'замера', 'замеров')} в этот же час в другие дни`}${a.prime ? '. Похоже на прайм-тайм' : ''}.`;
+  return base + actTxt + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
 }
 
 function renderResult() {

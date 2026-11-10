@@ -40,11 +40,12 @@ const (
 	evTakeSilver                = 62
 	evUpdateFame                = 82
 	evOtherGrabbedLoot          = 278
+	evDied                      = 164
 	opJoin                      = 2
 	opChangeCluster             = 41
 )
 
-var knownEvents = map[uint16]bool{evTakeSilver: true, evUpdateFame: true, evOtherGrabbedLoot: true, evLeave: true, evHealthUpdate: true, evHealthUpdates: true, evNewCharacter: true, evCharacterEquipmentChanged: true, evPartyJoined: true, evPartyDisbanded: true, evPartyPlayerJoined: true, evPartyPlayerLeft: true}
+var knownEvents = map[uint16]bool{evDied: true, evTakeSilver: true, evUpdateFame: true, evOtherGrabbedLoot: true, evLeave: true, evHealthUpdate: true, evHealthUpdates: true, evNewCharacter: true, evCharacterEquipmentChanged: true, evPartyJoined: true, evPartyDisbanded: true, evPartyPlayerJoined: true, evPartyPlayerLeft: true}
 
 //go:embed items_index.txt
 var itemsIndexRaw string
@@ -99,13 +100,18 @@ type state struct {
 
 // Заход на карту: сколько лута, серебра и славы собрала пати за время на карте
 type visit struct {
-	Map    string         `json:"map"`
-	Start  int64          `json:"start"`
-	End    int64          `json:"end"`
-	Party  int            `json:"party"`
-	Silver float64        `json:"silver"`
-	Fame   float64        `json:"fame"`
-	Loot   map[string]int `json:"loot"`
+	Map     string         `json:"map"`
+	Start   int64          `json:"start"`
+	End     int64          `json:"end"`
+	Party   int            `json:"party"`
+	Silver  float64        `json:"silver"`
+	Fame    float64        `json:"fame"`
+	Loot    map[string]int `json:"loot"`
+	Deaths  int            `json:"deaths"`  // сколько раз умерли ты или пати
+	Kills   int            `json:"kills"`   // сколько игроков убила пати
+	PvP     int            `json:"pvp"`     // все смерти игроков, которые были видны на карте
+	Players int            `json:"players"` // сколько чужих игроков встретилось на карте
+	seen    map[string]bool
 }
 
 var st = &state{players: map[int64]*player{}, byGUID: map[string]int64{}, byName: map[string]int64{}, party: map[string]string{}}
@@ -393,6 +399,16 @@ func onEvent(code byte, p map[byte]interface{}) {
 		if eq := toInts(p[40]); len(eq) > 0 {
 			pl.Equip = eq
 		}
+		if pl.Name != "" && !s_isMember(pl.Name) {
+			v := st.curVisit()
+			if v.seen == nil {
+				v.seen = map[string]bool{}
+			}
+			if !v.seen[pl.Name] {
+				v.seen[pl.Name] = true
+				v.Players++
+			}
+		}
 	case evCharacterEquipmentChanged:
 		id, ok := toI64(p[0])
 		if !ok {
@@ -443,6 +459,16 @@ func onEvent(code byte, p map[byte]interface{}) {
 		idx, _ := toI64(p[4])
 		if uid := itemByIndex[int(idx)]; uid != "" && !strings.Contains(uid, "TRASH") {
 			v.Loot[uid] += int(qty)
+		}
+	case evDied:
+		died, _ := p[2].(string)
+		killer, _ := p[10].(string)
+		v := st.curVisit()
+		v.PvP++
+		if s_isMember(died) {
+			v.Deaths++
+		} else if s_isMember(killer) {
+			v.Kills++
 		}
 	case evTakeSilver:
 		who, _ := toI64(p[0])
