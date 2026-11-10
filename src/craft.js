@@ -122,8 +122,8 @@ function setCraftBar(f) { const b = $('#cbar'); if (b) { b.hidden = false; b.fir
 
 /* ===== Фокус: сколько серебра добавляет одно очко ===== */
 const REF_BONUS = { METALBAR: 'Thetford', PLANKS: 'Fort Sterling', CLOTH: 'Lymhurst', LEATHER: 'Martlock', STONEBLOCK: 'Bridgewatch' };
-function focusUses(s, c, now) {
-  const fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, disc = 1 - c.fdisc / 100, out = [], P = s.P;
+function focusUses(s, c, now, all) {
+  const fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, out = [], P = s.P;
   const bonus = c.rrr === 24.8 || c.rrr === 47.9, rNo = bonus ? 0.248 : 0.152, rF = bonus ? 0.479 : 0.435;
   const price = (id, city) => { const d = P[id] && P[id][city] && P[id][city][1]; return d && d.sell_price_min > 0 && ageH(d.sell_price_min_date, now) <= cfg.maxAge ? d : null; };
   for (const it of s.items) {
@@ -133,7 +133,7 @@ function focusUses(s, c, now) {
     const QP = qpOf(c); for (let q = 1; q <= 5; q++) { const d = D[q]; if (d && d.buy_price_max > best && ageH(d.buy_price_max_date, now) <= cfg.maxAge) { best = d.buy_price_max; aS = Math.max(aS, ageH(d.buy_price_max_date, now)); } exp += QP[q] * best; }
     if (!(exp > 0)) continue;
     const cost = rr => ms.reduce((t, x) => t + x.m.n * x.d.sell_price_min * (x.m.ret ? 1 - rr : 1), 0) + c.fee;
-    const net = exp * (1 - fee), pF = net - cost(rF), pN = net - cost(rNo), focus = F * Math.pow(1.75, it.tier - 4 + it.ench) * disc;
+    const net = exp * (1 - fee), pF = net - cost(rF), pN = net - cost(rNo), focus = F * Math.pow(1.75, it.tier - 4 + it.ench) * focusFactor(it.cat);
     if (pF <= 0) continue;
     const aM = Math.max(...ms.map(x => ageH(x.d.sell_price_min_date, now)));
     out.push({ kind: 'craft', name: it.name + ' ' + tierLabel(it), id: it.id, focus, gain: pF - Math.max(0, pN), pF, conf: Math.pow(0.5, (aM + aS) / cfg.halfLife), where: cityName(s.src) + ' → ' + cityName(s.dst) });
@@ -144,23 +144,23 @@ function focusUses(s, c, now) {
     const sell = P[id] && P[id][s.src] && P[id][s.src][1]; if (!sell || !(sell.buy_price_max > 0) || ageH(sell.buy_price_max_date, now) > cfg.maxAge) continue;
     const ms = mats.map(([mid, n]) => ({ n, d: price(mid, s.src) })); if (ms.some(x => !x.d)) continue;
     const rN = b ? 0.367 : 0.152, rFf = b ? 0.539 : 0.435, cost = rr => ms.reduce((tt, x) => tt + x.n * x.d.sell_price_min * (1 - rr), 0);
-    const net = sell.buy_price_max * (1 - fee), pF = net - cost(rFf), pN = net - cost(rN), focus = F * disc;
+    const net = sell.buy_price_max * (1 - fee), pF = net - cost(rFf), pN = net - cost(rN), focus = F * focusFactor('ref:' + kind);
     if (pF <= 0) continue;
     const aM = Math.max(...ms.map(x => ageH(x.d.sell_price_min_date, now)), ageH(sell.buy_price_max_date, now));
     out.push({ kind: 'refine', name: 'Переработка: ' + (MATN[kind] || kind) + ' ' + t + '.' + e + (b ? ', бонус города' : ''), id, focus, gain: pF - Math.max(0, pN), pF, conf: Math.pow(0.5, aM / cfg.halfLife), where: cityName(s.src) });
   }
   for (const u of out) u.spf = u.gain * u.conf / u.focus;
-  return out.filter(u => u.spf > 0).sort((a, b) => b.spf - a.spf).slice(0, 12);
+  const res = out.filter(u => u.spf > 0).sort((a, b) => b.spf - a.spf); return all ? res : res.slice(0, 12);
 }
 function focusHTML() {
   const s = CF.scan, c = CF.cfg, uses = focusUses(s, Object.assign({}, c, { src: s.src, dst: s.dst }), Date.now());
   if (!uses.length) return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2></div><p style="font-size:14px">По этим ценам фокус ничего не добавляет. Попробуй другие тиры или город.</p></div>`;
   for (const u of uses) { u.times = Math.floor(c.fp / u.focus); u.total = u.times * u.focus * u.spf; }
   const best = uses.slice().sort((a, b) => b.total - a.total)[0], crafts = best.times;
-  if (!crafts) return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2></div><p style="font-size:14px">${fmt(c.fp)} очков не хватит ни на одну вещь из списка: самой дешёвой нужно ${fmt(Math.min(...uses.map(u => u.focus)))}. Укажи больше фокуса или скидку от специализации.</p><div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><label for="cFd" class="lbl" style="color:var(--pmute)">Скидка фокуса от специализации, %</label><input id="cFd" type="number" min="0" max="90" step="1" value="${c.fdisc}" class="pin"></div></div></div>`;
+  if (!crafts) return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2></div><p style="font-size:14px">${fmt(c.fp)} очков не хватит ни на одну вещь из списка: самой дешёвой нужно ${fmt(Math.min(...uses.map(u => u.focus)))}. Укажи больше фокуса или мастерство в профиле.</p><div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><span class="lbl" style="color:var(--pmute)">Мастерство</span><button type="button" class="linkbtn" data-c="profile">Указать в профиле</button></div></div></div>`;
   return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2><span>серебро, которое добавляет одно очко</span></div>
     <div class="sum"><div class="big"><span>${fmt(c.fp)} очков фокуса лучше всего потратить так</span><b>${fmt(best.total)}</b><small>${esc(best.name)}: около ${fmt(crafts)} ${plural(crafts, 'раз', 'раза', 'раз')}, ${best.spf.toFixed(1).replace('.', ',')} серебра за очко. Это ожидаемая прибавка к тому, что дал бы тот же крафт без фокуса.</small></div>
-    <div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><label for="cFd" class="lbl" style="color:var(--pmute)">Скидка фокуса от специализации, %</label><input id="cFd" type="number" min="0" max="90" step="1" value="${c.fdisc}" class="pin"></div></div></div>
+    <div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><span class="lbl" style="color:var(--pmute)">Мастерство</span><button type="button" class="linkbtn" data-c="profile">Указать в профиле</button></div></div></div>
     <div class="list">${uses.map(u => `<div class="item"><div class="irow" style="grid-template-columns:1fr auto"><div><div class="iname">${esc(u.name)}</div><div class="imeta">${esc(u.where)}, ${fmt(u.focus)} фокуса за ${u.kind === 'refine' ? 'единицу' : 'вещь'}, доверие ${Math.round(u.conf * 100)}%</div></div><div class="iprofit"><b>${u.spf.toFixed(1).replace('.', ',')}</b><span>за очко</span></div></div></div>`).join('')}</div>
     <p class="imeta" style="margin-top:10px">Возврат ресурсов с фокусом: 43,5% или 47,9% в городе с бонусом крафта, при переработке в городе с бонусом 53,9%. Если в игре цифры другие, поменяй возврат в настройках.</p></div>`;
 }
@@ -229,7 +229,7 @@ function craftQtyReason(p) {
 function openCraftCard(id) {
   const p = CF.plan.plan.find(x => x.r.it.id === id); if (!p) return;
   const r = p.r, it = r.it, c = CF.cfg, s = CF.scan, conf = Math.round(r.conf * 100), fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree);
-  const rank = CF.plan.plan.indexOf(p) + 1, F = DB.focus[it.id.replace(/^T\d_/, '').replace(/@\d$/, '')], focus = F ? F * Math.pow(1.75, it.tier - 4 + it.ench) * (1 - c.fdisc / 100) : null;
+  const rank = CF.plan.plan.indexOf(p) + 1, F = DB.focus[it.id.replace(/^T\d_/, '').replace(/@\d$/, '')], focus = F ? F * Math.pow(1.75, it.tier - 4 + it.ench) * focusFactor(it.cat) : null;
   const html = `<div class="cardtop"><span class="ic big">${tierLabel(it)}<img alt="" src="https://render.albiononline.com/v1/item/${it.id}.png?size=128" onerror="this.remove()"></span>
       <div><h3>${esc(it.name)}</h3><div class="imeta"><b>${tierLabel(it)}</b> · крафт в ${esc(cityName(s.src))}, сдать в ${esc(cityName(s.dst))}</div>
       <div class="cardprofit">+${fmt(r.profit * p.qty)}<span>за ${p.qty} шт., с одной +${fmt(r.profit)} (${(r.roi * 100).toFixed(0)}%)</span></div></div>
@@ -262,6 +262,7 @@ $('#tab-craft').addEventListener('click', e => {
   const a = b.dataset.c;
   if (a === 'scan') return craftScan(false);
   if (a === 'demo') return craftScan(true);
+  if (a === 'profile') return showTab('profile');
   if (a === 'open') return openCraftCard(b.closest('.item').dataset.id);
   if (a === 'copy') { const txt = craftShopping(); navigator.clipboard.writeText(txt).then(() => toast('Список закупки скопирован'), () => { modal(`<h3>Список закупки</h3><textarea readonly>${esc(txt)}</textarea><div class="dlgacts"><button type="button" data-close>Закрыть</button></div>`); $('#modal textarea').select(); }); }
 });

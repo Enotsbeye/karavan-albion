@@ -558,7 +558,7 @@ function onJournalClick(e) {
 }
 function showTab(tab) {
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-  $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta';
+  $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta'; $('#tab-profile').hidden = tab !== 'profile';
   $('.how').hidden = tab !== 'run';
   if (tab === 'home') { renderHome(); homeFetch(); }
   if (tab === 'journal') renderJournal();
@@ -568,6 +568,7 @@ function showTab(tab) {
   if (tab === 'group') { renderGroup(); gmStart(); } else if (typeof gmStop === 'function') gmStop();
   if (tab === 'maps') mpStart(); else if (typeof mpStop === 'function') mpStop();
   if (tab === 'meta') metaOpen();
+  if (tab === 'profile') renderProfile();
 }
 
 /* ---------- окно и уведомление ---------- */

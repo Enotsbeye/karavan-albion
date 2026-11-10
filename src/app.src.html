@@ -311,6 +311,11 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 .hc button:hover{border-color:var(--amber)}
 .side .brand h1{font-size:20px!important;line-height:1.2}
 @media(max-width:899px){.tabs button{min-width:0;font-size:10px;padding:6px 0}.tabs svg{width:20px;height:20px}}
+.pftable{overflow-x:auto}.pftable table{width:100%;border-collapse:collapse;font-size:13px}
+.pftable th{font-weight:500;color:var(--mute);text-align:left;padding:4px;font-size:12px}.pftable td{padding:4px;border-top:1px solid var(--line)}
+.stepper.sm{grid-template-columns:30px 54px 30px;gap:3px}.stepper.sm button{height:30px;font-size:16px;border-radius:7px}.stepper.sm input{padding:4px;height:30px}
+.stepper.sm.wide{grid-template-columns:30px 84px 30px}
+.pfx{color:var(--amber);font-weight:600;text-align:right}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -320,7 +325,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 <div class="wrap">
   <aside class="side">
     <div class="brand"><h1>Караван</h1></div>
-    <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
+    <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="profile" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Профиль</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
     <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
       <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="uk">UA</option></select>
@@ -399,6 +404,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
   <main id="tab-group" class="grid" hidden></main>
   <main id="tab-maps" class="grid" hidden></main>
   <main id="tab-meta" class="grid" hidden></main>
+  <main id="tab-profile" class="grid" hidden></main>
 
   <details class="how">
     <summary>Как это считается</summary>
@@ -434,6 +440,9 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 </script>
 <script>
 /*__META__*/
+</script>
+<script>
+/*__PROFILE__*/
 </script>
 <script>
 /*__HOME__*/

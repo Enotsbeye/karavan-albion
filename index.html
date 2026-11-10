@@ -311,6 +311,11 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 .hc button:hover{border-color:var(--amber)}
 .side .brand h1{font-size:20px!important;line-height:1.2}
 @media(max-width:899px){.tabs button{min-width:0;font-size:10px;padding:6px 0}.tabs svg{width:20px;height:20px}}
+.pftable{overflow-x:auto}.pftable table{width:100%;border-collapse:collapse;font-size:13px}
+.pftable th{font-weight:500;color:var(--mute);text-align:left;padding:4px;font-size:12px}.pftable td{padding:4px;border-top:1px solid var(--line)}
+.stepper.sm{grid-template-columns:30px 54px 30px;gap:3px}.stepper.sm button{height:30px;font-size:16px;border-radius:7px}.stepper.sm input{padding:4px;height:30px}
+.stepper.sm.wide{grid-template-columns:30px 84px 30px}
+.pfx{color:var(--amber);font-weight:600;text-align:right}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -320,7 +325,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 <div class="wrap">
   <aside class="side">
     <div class="brand"><h1>Караван</h1></div>
-    <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
+    <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="profile" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Профиль</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
     <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
       <select id="lang" aria-label="Язык"><option value="ru">RU</option><option value="uk">UA</option></select>
@@ -399,6 +404,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
   <main id="tab-group" class="grid" hidden></main>
   <main id="tab-maps" class="grid" hidden></main>
   <main id="tab-meta" class="grid" hidden></main>
+  <main id="tab-profile" class="grid" hidden></main>
 
   <details class="how">
     <summary>Как это считается</summary>
@@ -719,6 +725,18 @@ const LOC = LANG === 'uk' ? 'uk-UA' : 'ru-RU';
 
 const UK = {
   /* длинные фразы */
+  'Профиль': 'Профіль', 'Фокуса в день': 'Фокуса на день', 'С премиумом дают 10 000 в день. Если копил, укажи, сколько есть сейчас.': 'З преміумом дають 10 000 на день. Якщо збирав, вкажи, скільки є зараз.',
+  'Мастерство — уровень общей ветки (например, «Огородник» или «Кузнец»), специализация — уровень на то, что делаешь чаще всего. В последнем столбце — сколько фокуса уходит от обычного.': 'Майстерність — рівень загальної гілки (наприклад, «Городник» чи «Коваль»), спеціалізація — рівень на те, що робиш найчастіше. В останньому стовпці — скільки фокуса йде від звичайного.',
+  'Ветка': 'Гілка', 'Мастерство': 'Майстерність', 'Специализация': 'Спеціалізація', 'Фокус': 'Фокус',
+  'Формула из открытых калькуляторов: расход = базовый × 0,5^(эффективность / 10 000), эффективность = мастерство × 30 + специализация × 250.': 'Формула з відкритих калькуляторів: витрата = базова × 0,5^(ефективність / 10 000), ефективність = майстерність × 30 + спеціалізація × 250.',
+  'Куда лить фокус сегодня': 'Куди лити фокус сьогодні', 'Для совета нужны цены:': 'Для поради потрібні ціни:', 'Посчитать крафт и переработку': 'Порахувати крафт і переробку',
+  'Фокус принесёт сверху': 'Фокус принесе зверху', 'Это прибавка к тому, что дали бы те же действия без фокуса.': 'Це надбавка до того, що дали б ті самі дії без фокуса.', 'Останется': 'Залишиться', 'фокуса.': 'фокуса.',
+  'По текущим ценам фокус нигде не даёт прибавки. Попробуй другие тиры в «Крафте» или другой рынок на «Острове».': 'За поточними цінами фокус ніде не дає надбавки. Спробуй інші тири в «Крафті» чи інший ринок на «Острові».',
+  'Другие варианты:': 'Інші варіанти:', 'Считаю…': 'Рахую…', 'Указать в профиле': 'Вказати в профілі',
+  'Расход фокуса считается по твоему мастерству из вкладки': 'Витрата фокуса рахується за твоєю майстерністю з вкладки',
+  'Огородник: поля': 'Городник: поля', 'Травник: сады трав': 'Травник: сади трав', 'Скотовод: пастбища': 'Скотар: пасовища', 'Скотовод: питомники': 'Скотар: розплідники',
+  'Переработка: слитки': 'Переробка: злитки', 'Переработка: брусья': 'Переробка: бруси', 'Переработка: ткань': 'Переробка: тканина', 'Переработка: кожа': 'Переробка: шкіра', 'Переработка: блоки': 'Переробка: блоки',
+  'Крафт: ближний бой': 'Крафт: ближній бій', 'Крафт: дальний бой': 'Крафт: дальній бій', 'Крафт: магия': 'Крафт: магія', 'Крафт: латы': 'Крафт: лати', 'Крафт: кожа': 'Крафт: шкіра', 'Крафт: ткань': 'Крафт: тканина', 'Крафт: левая рука': 'Крафт: ліва рука', 'Крафт: плащи': 'Крафт: плащі', 'Крафт: сумки': 'Крафт: сумки',
   'Сводку раз в сутки собирает сайт Каравана, скачивать ничего не нужно': 'Зведення раз на добу збирає сайт Каравана, завантажувати нічого не потрібно',
   'Не получилось загрузить свежий киллборд напрямую. Ниже — последняя сводка с сайта Каравана, она обновляется раз в сутки.': 'Не вдалося завантажити свіжий кілборд напряму. Нижче — останнє зведення із сайту Каравана, воно оновлюється раз на добу.',
   'Без премиума урожай и продукты животных считаются вдвое меньше, а налог с продажи выше. Если в игре цифры другие, поправь множитель.': 'Без преміуму урожай і продукти тварин рахуються вдвічі меншими, а податок із продажу вищий. Якщо в грі цифри інші, виправ множник.',
@@ -1832,7 +1850,7 @@ function onJournalClick(e) {
 }
 function showTab(tab) {
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-  $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta';
+  $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta'; $('#tab-profile').hidden = tab !== 'profile';
   $('.how').hidden = tab !== 'run';
   if (tab === 'home') { renderHome(); homeFetch(); }
   if (tab === 'journal') renderJournal();
@@ -1842,6 +1860,7 @@ function showTab(tab) {
   if (tab === 'group') { renderGroup(); gmStart(); } else if (typeof gmStop === 'function') gmStop();
   if (tab === 'maps') mpStart(); else if (typeof mpStop === 'function') mpStop();
   if (tab === 'meta') metaOpen();
+  if (tab === 'profile') renderProfile();
 }
 
 /* ---------- окно и уведомление ---------- */
@@ -2008,8 +2027,8 @@ function setCraftBar(f) { const b = $('#cbar'); if (b) { b.hidden = false; b.fir
 
 /* ===== Фокус: сколько серебра добавляет одно очко ===== */
 const REF_BONUS = { METALBAR: 'Thetford', PLANKS: 'Fort Sterling', CLOTH: 'Lymhurst', LEATHER: 'Martlock', STONEBLOCK: 'Bridgewatch' };
-function focusUses(s, c, now) {
-  const fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, disc = 1 - c.fdisc / 100, out = [], P = s.P;
+function focusUses(s, c, now, all) {
+  const fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree) / 100, out = [], P = s.P;
   const bonus = c.rrr === 24.8 || c.rrr === 47.9, rNo = bonus ? 0.248 : 0.152, rF = bonus ? 0.479 : 0.435;
   const price = (id, city) => { const d = P[id] && P[id][city] && P[id][city][1]; return d && d.sell_price_min > 0 && ageH(d.sell_price_min_date, now) <= cfg.maxAge ? d : null; };
   for (const it of s.items) {
@@ -2019,7 +2038,7 @@ function focusUses(s, c, now) {
     const QP = qpOf(c); for (let q = 1; q <= 5; q++) { const d = D[q]; if (d && d.buy_price_max > best && ageH(d.buy_price_max_date, now) <= cfg.maxAge) { best = d.buy_price_max; aS = Math.max(aS, ageH(d.buy_price_max_date, now)); } exp += QP[q] * best; }
     if (!(exp > 0)) continue;
     const cost = rr => ms.reduce((t, x) => t + x.m.n * x.d.sell_price_min * (x.m.ret ? 1 - rr : 1), 0) + c.fee;
-    const net = exp * (1 - fee), pF = net - cost(rF), pN = net - cost(rNo), focus = F * Math.pow(1.75, it.tier - 4 + it.ench) * disc;
+    const net = exp * (1 - fee), pF = net - cost(rF), pN = net - cost(rNo), focus = F * Math.pow(1.75, it.tier - 4 + it.ench) * focusFactor(it.cat);
     if (pF <= 0) continue;
     const aM = Math.max(...ms.map(x => ageH(x.d.sell_price_min_date, now)));
     out.push({ kind: 'craft', name: it.name + ' ' + tierLabel(it), id: it.id, focus, gain: pF - Math.max(0, pN), pF, conf: Math.pow(0.5, (aM + aS) / cfg.halfLife), where: cityName(s.src) + ' → ' + cityName(s.dst) });
@@ -2030,23 +2049,23 @@ function focusUses(s, c, now) {
     const sell = P[id] && P[id][s.src] && P[id][s.src][1]; if (!sell || !(sell.buy_price_max > 0) || ageH(sell.buy_price_max_date, now) > cfg.maxAge) continue;
     const ms = mats.map(([mid, n]) => ({ n, d: price(mid, s.src) })); if (ms.some(x => !x.d)) continue;
     const rN = b ? 0.367 : 0.152, rFf = b ? 0.539 : 0.435, cost = rr => ms.reduce((tt, x) => tt + x.n * x.d.sell_price_min * (1 - rr), 0);
-    const net = sell.buy_price_max * (1 - fee), pF = net - cost(rFf), pN = net - cost(rN), focus = F * disc;
+    const net = sell.buy_price_max * (1 - fee), pF = net - cost(rFf), pN = net - cost(rN), focus = F * focusFactor('ref:' + kind);
     if (pF <= 0) continue;
     const aM = Math.max(...ms.map(x => ageH(x.d.sell_price_min_date, now)), ageH(sell.buy_price_max_date, now));
     out.push({ kind: 'refine', name: 'Переработка: ' + (MATN[kind] || kind) + ' ' + t + '.' + e + (b ? ', бонус города' : ''), id, focus, gain: pF - Math.max(0, pN), pF, conf: Math.pow(0.5, aM / cfg.halfLife), where: cityName(s.src) });
   }
   for (const u of out) u.spf = u.gain * u.conf / u.focus;
-  return out.filter(u => u.spf > 0).sort((a, b) => b.spf - a.spf).slice(0, 12);
+  const res = out.filter(u => u.spf > 0).sort((a, b) => b.spf - a.spf); return all ? res : res.slice(0, 12);
 }
 function focusHTML() {
   const s = CF.scan, c = CF.cfg, uses = focusUses(s, Object.assign({}, c, { src: s.src, dst: s.dst }), Date.now());
   if (!uses.length) return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2></div><p style="font-size:14px">По этим ценам фокус ничего не добавляет. Попробуй другие тиры или город.</p></div>`;
   for (const u of uses) { u.times = Math.floor(c.fp / u.focus); u.total = u.times * u.focus * u.spf; }
   const best = uses.slice().sort((a, b) => b.total - a.total)[0], crafts = best.times;
-  if (!crafts) return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2></div><p style="font-size:14px">${fmt(c.fp)} очков не хватит ни на одну вещь из списка: самой дешёвой нужно ${fmt(Math.min(...uses.map(u => u.focus)))}. Укажи больше фокуса или скидку от специализации.</p><div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><label for="cFd" class="lbl" style="color:var(--pmute)">Скидка фокуса от специализации, %</label><input id="cFd" type="number" min="0" max="90" step="1" value="${c.fdisc}" class="pin"></div></div></div>`;
+  if (!crafts) return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2></div><p style="font-size:14px">${fmt(c.fp)} очков не хватит ни на одну вещь из списка: самой дешёвой нужно ${fmt(Math.min(...uses.map(u => u.focus)))}. Укажи больше фокуса или мастерство в профиле.</p><div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><span class="lbl" style="color:var(--pmute)">Мастерство</span><button type="button" class="linkbtn" data-c="profile">Указать в профиле</button></div></div></div>`;
   return `<div class="sheet" style="margin-top:16px"><div class="sheethead"><h2>Куда тратить фокус</h2><span>серебро, которое добавляет одно очко</span></div>
     <div class="sum"><div class="big"><span>${fmt(c.fp)} очков фокуса лучше всего потратить так</span><b>${fmt(best.total)}</b><small>${esc(best.name)}: около ${fmt(crafts)} ${plural(crafts, 'раз', 'раза', 'раз')}, ${best.spf.toFixed(1).replace('.', ',')} серебра за очко. Это ожидаемая прибавка к тому, что дал бы тот же крафт без фокуса.</small></div>
-    <div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><label for="cFd" class="lbl" style="color:var(--pmute)">Скидка фокуса от специализации, %</label><input id="cFd" type="number" min="0" max="90" step="1" value="${c.fdisc}" class="pin"></div></div></div>
+    <div class="two"><div><label for="cFp" class="lbl" style="color:var(--pmute)">Очков фокуса</label><input id="cFp" type="number" min="0" step="1000" value="${c.fp}" class="pin"></div><div><span class="lbl" style="color:var(--pmute)">Мастерство</span><button type="button" class="linkbtn" data-c="profile">Указать в профиле</button></div></div></div>
     <div class="list">${uses.map(u => `<div class="item"><div class="irow" style="grid-template-columns:1fr auto"><div><div class="iname">${esc(u.name)}</div><div class="imeta">${esc(u.where)}, ${fmt(u.focus)} фокуса за ${u.kind === 'refine' ? 'единицу' : 'вещь'}, доверие ${Math.round(u.conf * 100)}%</div></div><div class="iprofit"><b>${u.spf.toFixed(1).replace('.', ',')}</b><span>за очко</span></div></div></div>`).join('')}</div>
     <p class="imeta" style="margin-top:10px">Возврат ресурсов с фокусом: 43,5% или 47,9% в городе с бонусом крафта, при переработке в городе с бонусом 53,9%. Если в игре цифры другие, поменяй возврат в настройках.</p></div>`;
 }
@@ -2115,7 +2134,7 @@ function craftQtyReason(p) {
 function openCraftCard(id) {
   const p = CF.plan.plan.find(x => x.r.it.id === id); if (!p) return;
   const r = p.r, it = r.it, c = CF.cfg, s = CF.scan, conf = Math.round(r.conf * 100), fee = (cfg.premium ? cfg.taxPremium : cfg.taxFree);
-  const rank = CF.plan.plan.indexOf(p) + 1, F = DB.focus[it.id.replace(/^T\d_/, '').replace(/@\d$/, '')], focus = F ? F * Math.pow(1.75, it.tier - 4 + it.ench) * (1 - c.fdisc / 100) : null;
+  const rank = CF.plan.plan.indexOf(p) + 1, F = DB.focus[it.id.replace(/^T\d_/, '').replace(/@\d$/, '')], focus = F ? F * Math.pow(1.75, it.tier - 4 + it.ench) * focusFactor(it.cat) : null;
   const html = `<div class="cardtop"><span class="ic big">${tierLabel(it)}<img alt="" src="https://render.albiononline.com/v1/item/${it.id}.png?size=128" onerror="this.remove()"></span>
       <div><h3>${esc(it.name)}</h3><div class="imeta"><b>${tierLabel(it)}</b> · крафт в ${esc(cityName(s.src))}, сдать в ${esc(cityName(s.dst))}</div>
       <div class="cardprofit">+${fmt(r.profit * p.qty)}<span>за ${p.qty} шт., с одной +${fmt(r.profit)} (${(r.roi * 100).toFixed(0)}%)</span></div></div>
@@ -2148,6 +2167,7 @@ $('#tab-craft').addEventListener('click', e => {
   const a = b.dataset.c;
   if (a === 'scan') return craftScan(false);
   if (a === 'demo') return craftScan(true);
+  if (a === 'profile') return showTab('profile');
   if (a === 'open') return openCraftCard(b.closest('.item').dataset.id);
   if (a === 'copy') { const txt = craftShopping(); navigator.clipboard.writeText(txt).then(() => toast('Список закупки скопирован'), () => { modal(`<h3>Список закупки</h3><textarea readonly>${esc(txt)}</textarea><div class="dlgacts"><button type="button" data-close>Закрыть</button></div>`); $('#modal textarea').select(); }); }
 });
@@ -2277,7 +2297,7 @@ function farmSetupHTML() {
     <span class="lbl">Сколько участков поливать или кормить с фокусом</span>
     <div class="two fld">${num('fwFarm', 'Полей с фокусом', Math.min(c.wFarm || 0, c.farm), 0, c.farm)}${num('fwHerb', 'Садов с фокусом', Math.min(c.wHerb || 0, c.herb), 0, c.herb)}</div>
     <div class="two fld">${num('fwPasture', 'Пастбищ с фокусом', Math.min(c.wPasture || 0, c.pasture), 0, c.pasture)}${num('fwKennel', 'Питомников с фокусом', Math.min(c.wKennel || 0, c.kennel), 0, c.kennel)}</div>
-    <div class="fld">${num('fDisc', 'Скидка фокуса от мастерства, %', c.fdisc || 0, 0, 90, 1)}<div class="hint">Посмотри в игре, сколько фокуса стоит полить одну грядку, и подбери скидку, чтобы расход совпал.</div></div>
+    <div class="hint" style="margin-bottom:12px">Расход фокуса считается по твоему мастерству из вкладки <button type="button" class="linkbtn" data-f="profile">Профиль</button>.</div>
     <div class="rowline" style="flex-direction:column;align-items:flex-start;gap:10px">
       <label class="switch"><input type="checkbox" id="fPrem" ${cfg.premium ? 'checked' : ''}> Премиум-статус</label>
 
@@ -2294,7 +2314,7 @@ function farmResultHTML() {
   const c = FM.cfg, s = FM.scan, rows = farmCalc(s.P, Object.assign({}, c, { city: s.city }), Date.now());
   if (s.demo) h += `<div class="note warn">Демо: цены выдуманы, чтобы показать, как выглядит расчёт.</div>`;
   const groups = [['farm', c.farm], ['herbgarden', c.herb], ['pasture', c.pasture], ['kennel', c.kennel]];
-  let total = 0, focusUsed = 0; const plan = [], disc = 1 - (c.fdisc || 0) / 100;
+  let total = 0, focusUsed = 0; const plan = [], ff = { farm: focusFactor('farm'), herbgarden: focusFactor('herb'), pasture: focusFactor('pasture'), kennel: focusFactor('kennel') };
   const wOf = { farm: c.wFarm, herbgarden: c.wHerb, pasture: c.wPasture, kennel: c.wKennel };
   for (const [k, n] of groups) {
     if (!(n > 0)) continue;
@@ -2302,7 +2322,7 @@ function farmResultHTML() {
     /* На участки с фокусом берём то, что выгоднее с фокусом, на остальные — то, что выгоднее без него */
     const bestN = list.slice().sort((a, b) => b.pn - a.pn)[0], bestF = list.slice().sort((a, b) => b.pf - a.pf)[0];
     if (!bestN) continue;
-    const vN = Math.max(0, bestN.pn) * c.slots * (n - w), vF = w && bestF ? Math.max(0, bestF.pf) * c.slots * w : 0, fz = w && bestF ? bestF.fday * disc * c.slots * w : 0;
+    const vN = Math.max(0, bestN.pn) * c.slots * (n - w), vF = w && bestF ? Math.max(0, bestF.pf) * c.slots * w : 0, fz = w && bestF ? bestF.fday * ff[k] * c.slots * w : 0;
     total += vN + vF; focusUsed += fz;
     const parts = [];
     if (n - w > 0 && bestN.pn > 0) parts.push(`${n - w} — ${bestN.name} T${bestN.t}`);
@@ -2313,18 +2333,19 @@ function farmResultHTML() {
   h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
     <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${focusUsed ? ` Фокуса нужно около ${fmt(focusUsed)} в день.` : ''}</small></div>
     <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Укажи кнопками + слева, сколько у тебя полей, садов, пастбищ и питомников, и план соберётся.'}</div></div>`;
-  for (const [k] of groups) {
-    const list = rows.filter(r => r.kind === k).sort((a, b) => b.pn - a.pn).slice(0, 8); if (!list.length) continue;
+  for (const [k, cnt] of groups) {
+    if (!(cnt > 0)) continue;
+    const list = rows.filter(r => r.kind === k).sort((a, b) => b.pn - a.pn).slice(0, 5); if (!list.length) continue;
     h += `<div class="list"><div class="listhead"><h3>${FKIND[k]}</h3><span>прибыль в день с одного места</span></div>${list.map(r => `<div class="item"><div class="irow" style="grid-template-columns:auto 1fr auto">
       <span class="ic">T${r.t}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${r.icon}.png?size=64" onerror="this.remove()"></span>
-      <div style="min-width:0"><div class="iname">${esc(r.name)}</div><div class="imeta">${r.note}</div><div class="imeta">${r.vol != null ? 'продаётся около ' + fmt(r.vol) + ' в день' : 'объём продаж неизвестен'}</div>${!r.product && r.pf > r.pn && r.fday ? `<div class="imeta">Фокус: +${fmt(r.pf - r.pn)} в день за ${fmt(r.fday * (1 - (c.fdisc || 0) / 100))} очков (${((r.pf - r.pn) / (r.fday * (1 - (c.fdisc || 0) / 100) || 1)).toFixed(1).replace('.', ',')} серебра за очко)${r.fnote ? ', ' + esc(r.fnote) : ''}</div>` : ''}</div>
+      <div style="min-width:0"><div class="iname">${esc(r.name)}</div><div class="imeta">${r.note}</div><div class="imeta">${r.vol != null ? 'продаётся около ' + fmt(r.vol) + ' в день' : 'объём продаж неизвестен'}</div>${!r.product && r.pf > r.pn && r.fday ? `<div class="imeta">Фокус: +${fmt(r.pf - r.pn)} в день за ${fmt(r.fday * focusFactor(r.kind === 'herbgarden' ? 'herb' : r.kind))} очков (${((r.pf - r.pn) / (r.fday * focusFactor(r.kind === 'herbgarden' ? 'herb' : r.kind) || 1)).toFixed(1).replace('.', ',')} серебра за очко)${r.fnote ? ', ' + esc(r.fnote) : ''}</div>` : ''}</div>
       <div class="iprofit"><b class="${r.perDay >= 0 ? '' : 'negc'}" style="${r.perDay >= 0 ? '' : 'color:var(--pred)'}">${r.perDay >= 0 ? '+' : '−'}${fmtShort(Math.abs(r.perDay))}</b><span>×${c.slots}: ${fmtShort(r.perDay * c.slots)}</span></div></div></div>`).join('')}</div>`;
   }
   h += `<p class="imeta" style="margin-top:12px">Урожай, шанс вернуть семя или детёныша, расход корма и фокуса взяты из данных игры. Вернувшееся семя сажается снова, лишние семена продаются. Корм считается самым дешёвым подходящим на рынке, любимый корм животного даёт вдвое больше питания. Продажа считается по лучшему из двух вариантов: свой ордер на продажу или сдать в ордер на покупку, с налогом. Для продуктов (молоко, яйца) не учтена стоимость самого животного: её нужно вырастить один раз.</p></div>`;
   return h;
 }
 function renderFarm() { const el = $('#tab-farm'); if (el.hidden) return; el.innerHTML = farmSetupHTML() + `<section aria-live="polite">${farmResultHTML()}</section>`; }
-const FMAP = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult', fwFarm: 'wFarm', fwHerb: 'wHerb', fwPasture: 'wPasture', fwKennel: 'wKennel', fDisc: 'fdisc' };
+const FMAP = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult', fwFarm: 'wFarm', fwHerb: 'wHerb', fwPasture: 'wPasture', fwKennel: 'wKennel' };
 function farmSetNum(input, v) {
   const min = +input.dataset.min, max = +input.dataset.max, step = +input.dataset.step;
   v = Math.min(max, Math.max(min, Math.round(v / step) * step));
@@ -2335,7 +2356,7 @@ function farmSetNum(input, v) {
 $('#tab-farm').addEventListener('click', e => {
   const s = e.target.closest('[data-fs]');
   if (s) { const inp = document.getElementById(s.dataset.for); const cur = parseFloat(String(inp.value).replace(',', '.')) || 0; return farmSetNum(inp, cur + (+s.dataset.fs) * (+inp.dataset.step)); }
-  const b = e.target.closest('[data-f]'); if (!b) return; if (b.dataset.f === 'scan') farmScan(false); if (b.dataset.f === 'demo') farmScan(true);
+  const b = e.target.closest('[data-f]'); if (!b) return; if (b.dataset.f === 'profile') return showTab('profile'); if (b.dataset.f === 'scan') farmScan(false); if (b.dataset.f === 'demo') farmScan(true);
 });
 $('#tab-farm').addEventListener('keydown', e => { if (e.key === 'Enter' && FMAP[e.target.id]) e.target.blur(); });
 $('#tab-farm').addEventListener('change', e => {
@@ -2734,6 +2755,90 @@ $('#tab-meta').addEventListener('change', async e => {
   else if (t.id === 'mtBudget') c.budget = parseSilver(t.value); else if (t.id === 'mtCity') c.city = t.value; else if (t.id === 'mtKills') c.kills = +t.value; else if (t.id === 'mtSort') c.sort = t.value; else return;
   mtSave(); renderMeta(); await metaPrice(); renderMeta();
 });
+
+</script>
+<script>
+"use strict";
+/* ===== Караван: профиль — мастерство и куда тратить фокус ===== */
+/* Расход фокуса = базовый × 0,5^(эффективность / 10 000).
+   Эффективность = мастерство × 30 + специализация на этой вещи × 250 (+ другие специализации ветки × 30). */
+const PF_AREAS = [
+  ['farm', 'Огородник: поля'], ['herb', 'Травник: сады трав'], ['pasture', 'Скотовод: пастбища'], ['kennel', 'Скотовод: питомники'],
+  ['ref:METALBAR', 'Переработка: слитки'], ['ref:PLANKS', 'Переработка: брусья'], ['ref:CLOTH', 'Переработка: ткань'], ['ref:LEATHER', 'Переработка: кожа'], ['ref:STONEBLOCK', 'Переработка: блоки'],
+  ['melee', 'Крафт: ближний бой'], ['ranged', 'Крафт: дальний бой'], ['magic', 'Крафт: магия'], ['plate', 'Крафт: латы'], ['leather', 'Крафт: кожа'], ['cloth', 'Крафт: ткань'], ['offhand', 'Крафт: левая рука'], ['cape', 'Крафт: плащи'], ['bag', 'Крафт: сумки']
+];
+const PF = { cfg: Object.assign({ focusDay: 10000, other: true, lv: {} }, LS.get('karavan.profile', {})) };
+const pfSave = () => LS.set('karavan.profile', PF.cfg);
+function fceOf(area) { const l = PF.cfg.lv[area] || {}; return (l.m || 0) * 30 + (l.s || 0) * 250 + (PF.cfg.other ? (l.o || 0) * 30 : 0); }
+function focusFactor(area) { return Math.pow(0.5, fceOf(area) / 10000); }
+
+/* Все способы потратить фокус, у которых есть цены: крафт и переработка (вкладка «Крафт»), остров (вкладка «Остров») */
+function pfUses() {
+  const out = [];
+  if (typeof CF !== 'undefined' && CF.scan) {
+    for (const u of focusUses(CF.scan, Object.assign({}, CF.cfg, { src: CF.scan.src, dst: CF.scan.dst }), Date.now(), true)) {
+      const cap = u.kind === 'refine' ? 2000 : 30;
+      out.push({ src: u.kind === 'refine' ? 'Переработка' : 'Крафт', name: u.name, where: u.where, cost: u.focus, gain: u.gain * u.conf, cap, unit: 'шт.' });
+    }
+  }
+  if (FM.scan) {
+    const c = FM.cfg, rows = farmCalc(FM.scan.P, Object.assign({}, c, { city: FM.scan.city }), Date.now()), n = { farm: c.farm, herbgarden: c.herb, pasture: c.pasture, kennel: c.kennel };
+    for (const k of Object.keys(n)) {
+      if (!(n[k] > 0)) continue;
+      const best = rows.filter(r => r.kind === k && r.fday && r.pf > r.pn).sort((a, b) => (b.pf - b.pn) / b.fday - (a.pf - a.pn) / a.fday)[0];
+      if (best) out.push({ src: FKIND[k], name: best.name + ' T' + best.t, where: cityName(FM.scan.city), cost: best.fday * focusFactor(k === 'herbgarden' ? 'herb' : k), gain: best.pf - best.pn, cap: n[k] * c.slots, unit: 'мест' });
+    }
+  }
+  for (const u of out) u.spf = u.gain / Math.max(1, u.cost);
+  return out.filter(u => u.spf > 0).sort((a, b) => b.spf - a.spf);
+}
+function pfPlan(uses) {
+  let left = PF.cfg.focusDay; const plan = [];
+  for (const u of uses) { if (left < u.cost) continue; const k = Math.min(u.cap, Math.floor(left / u.cost)); if (k < 1) continue; left -= k * u.cost; plan.push({ u, k, focus: k * u.cost, gain: k * u.gain }); }
+  return { plan, left, total: plan.reduce((s, p) => s + p.gain, 0) };
+}
+
+function renderProfile() {
+  const el = $('#tab-profile'); if (el.hidden) return;
+  const c = PF.cfg, step = (id, v, max, st, wide) => `<div class="stepper sm${wide ? ' wide' : ''}"><button type="button" data-ps="-${st}" data-for="${id}" aria-label="Меньше">−</button><input id="${id}" type="text" inputmode="numeric" value="${v}" data-max="${max}"><button type="button" data-ps="${st}" data-for="${id}" aria-label="Больше">+</button></div>`;
+  const rows = PF_AREAS.map(([k, n]) => { const l = c.lv[k] || {}, f = focusFactor(k); return `<tr><td>${esc(n)}</td><td>${step('m|' + k, l.m || 0, 100, 10)}</td><td>${step('s|' + k, l.s || 0, 100, 10)}</td><td class="pfx">${Math.round(f * 100)}%</td></tr>`; }).join('');
+  const uses = pfUses(), pl = pfPlan(uses);
+  const need = [];
+  if (typeof CF === 'undefined' || !CF.scan) need.push('<button type="button" class="tbtn2" data-pp="craft">Посчитать крафт и переработку</button>');
+  if (!FM.scan) need.push('<button type="button" class="tbtn2" data-pp="farm">Посчитать остров</button>');
+  el.innerHTML = `<section class="setup"><h2>Профиль</h2>
+    <label class="switch" style="margin-bottom:12px"><input type="checkbox" id="pPrem" ${cfg.premium ? 'checked' : ''}> Премиум-статус</label>
+    <div class="fld"><label>Фокуса в день</label>${step('pFocus', c.focusDay, 60000, 1000, 1)}<div class="hint">С премиумом дают 10 000 в день. Если копил, укажи, сколько есть сейчас.</div></div>
+    <div class="hint" style="margin-bottom:8px">Мастерство — уровень общей ветки (например, «Огородник» или «Кузнец»), специализация — уровень на то, что делаешь чаще всего. В последнем столбце — сколько фокуса уходит от обычного.</div>
+    <div class="pftable"><table><thead><tr><th>Ветка</th><th>Мастерство</th><th>Специализация</th><th>Фокус</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="imeta" style="margin-top:8px">Формула из открытых калькуляторов: расход = базовый × 0,5^(эффективность / 10 000), эффективность = мастерство × 30 + специализация × 250.</p></section>
+    <section aria-live="off"><div class="sheet"><div class="sheethead"><h2>Куда лить фокус сегодня</h2><span>${fmt(c.focusDay)} очков</span></div>
+    ${need.length ? `<p class="imeta">Для совета нужны цены: ${need.join(' ')}</p>` : ''}
+    ${pl.plan.length ? `<div class="sum"><div class="big"><span>Фокус принесёт сверху</span><b>+${fmt(pl.total)}</b><small>Это прибавка к тому, что дали бы те же действия без фокуса.${pl.left > 100 ? ' Останется ' + fmt(pl.left) + ' фокуса.' : ''}</small></div></div>
+    <div class="list">${pl.plan.map((p, i) => `<div class="item"><div class="mrow"><div class="mname"><b>${i + 1}. ${esc(p.u.src)}: ${esc(p.u.name)}</b><div class="imeta">${esc(p.u.where)} · ${fmt(p.k)} ${p.u.unit} × ${fmt(p.u.cost)} фокуса = ${fmt(p.focus)}</div></div><div class="mnum"><b>+${fmtShort(p.gain)}</b><span>${p.u.spf.toFixed(1).replace('.', ',')} за очко</span></div></div></div>`).join('')}</div>`
+      : (need.length ? '' : '<p>По текущим ценам фокус нигде не даёт прибавки. Попробуй другие тиры в «Крафте» или другой рынок на «Острове».</p>')}
+    ${uses.length > pl.plan.length ? `<details class="left"><summary>Другие варианты: ${uses.length - pl.plan.length}</summary><ul>${uses.filter(u => !pl.plan.some(p => p.u === u)).slice(0, 15).map(u => `<li>${esc(u.src)}: ${esc(u.name)} — ${u.spf.toFixed(1).replace('.', ',')} серебра за очко</li>`).join('')}</ul></details>` : ''}
+    </div></section>`;
+}
+function pfSetFromInput(inp, v) {
+  const id = inp.id, max = +inp.dataset.max; v = Math.max(0, Math.min(max, Math.round(+v || 0)));
+  if (id === 'pFocus') PF.cfg.focusDay = v;
+  else { const [w, k] = id.split('|'); PF.cfg.lv[k] = Object.assign({}, PF.cfg.lv[k], { [w]: v }); }
+  pfSave(); renderProfile();
+}
+$('#tab-profile').addEventListener('click', e => {
+  const s = e.target.closest('[data-ps]');
+  if (s) { const inp = document.getElementById(s.dataset.for); return pfSetFromInput(inp, (+String(inp.value).replace(/\s/g, '') || 0) + (+s.dataset.ps)); }
+  const b = e.target.closest('[data-pp]'); if (!b) return;
+  b.disabled = true; b.textContent = 'Считаю…';
+  (b.dataset.pp === 'craft' ? craftScan(false) : farmScan(false)).then(renderProfile);
+});
+$('#tab-profile').addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'pPrem') { cfg.premium = t.checked; saveCfg(); const p = $('#premium'); if (p) p.checked = cfg.premium; return renderProfile(); }
+  if (t.dataset.max) pfSetFromInput(t, String(t.value).replace(/\s/g, ''));
+});
+$('#tab-profile').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.max) e.target.blur(); });
 
 </script>
 <script>
