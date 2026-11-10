@@ -1,0 +1,614 @@
+// Караван: счётчик урона группы для Albion Online.
+// Слушает сетевые пакеты игры (только чтение), считает урон и хил участников пати
+// и отдаёт данные Каравану по адресу http://127.0.0.1:48713/state.
+//
+// Разбор протокола Photon взят из albiondata-client (MIT, папка photon).
+// Номера событий и полей сверены с открытым Statistics Analysis Tool.
+package main
+
+import (
+	"bufio"
+	_ "embed"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+)
+
+const (
+	listenAddr = "127.0.0.1:48713"
+	fightIdle  = 20 * time.Second // бой заканчивается, если 20 секунд никто из пати не наносил урон и не лечил
+
+	evLeave                     = 1
+	evHealthUpdate              = 6
+	evHealthUpdates             = 7
+	evNewCharacter              = 29
+	evCharacterEquipmentChanged = 90
+	evPartyJoined               = 230
+	evPartyDisbanded            = 231
+	evPartyPlayerJoined         = 232
+	evPartyPlayerLeft           = 234
+	opJoin                      = 2
+)
+
+var knownEvents = map[uint16]bool{evLeave: true, evHealthUpdate: true, evHealthUpdates: true, evNewCharacter: true, evCharacterEquipmentChanged: true, evPartyJoined: true, evPartyDisbanded: true, evPartyPlayerJoined: true, evPartyPlayerLeft: true}
+
+//go:embed items_index.txt
+var itemsIndexRaw string
+var itemByIndex = map[int]string{}
+
+type player struct {
+	ObjectID int64
+	Name     string
+	Guild    string
+	GUID     string
+	Equip    []int
+}
+
+type stat struct {
+	Name     string   `json:"name"`
+	Guild    string   `json:"guild"`
+	Self     bool     `json:"self"`
+	Damage   float64  `json:"damage"`
+	Heal     float64  `json:"heal"`
+	Taken    float64  `json:"taken"`
+	Hits     int      `json:"hits"`
+	Equip    []string `json:"equip"`
+	FirstHit int64    `json:"firstHit"`
+	LastHit  int64    `json:"lastHit"`
+}
+
+type fight struct {
+	Start   int64            `json:"start"`
+	End     int64            `json:"end"`
+	Players map[string]*stat `json:"players"`
+}
+
+type state struct {
+	mu        sync.Mutex
+	players   map[int64]*player // objectId → игрок
+	byGUID    map[string]int64
+	byName    map[string]int64
+	party     map[string]string // guid → имя
+	selfID    int64
+	selfName  string
+	selfGUID  string
+	cur       *fight
+	history   []*fight
+	packets   int64
+	events    int64
+	encrypted int64
+	devices   []string
+	lastPkt   int64
+}
+
+var st = &state{players: map[int64]*player{}, byGUID: map[string]int64{}, byName: map[string]int64{}, party: map[string]string{}}
+
+func main() {
+	log.SetFlags(log.Ltime)
+	loadItems()
+	fmt.Println("Караван: счётчик урона группы")
+	fmt.Println("Не закрывай это окно, пока играешь. Данные смотри во вкладке «Группа» в Караване.")
+	if err := startCapture(); err != nil {
+		fmt.Println()
+		fmt.Println("Не найден Npcap. Установи его с https://npcap.com (галочка «WinPcap API-compatible Mode»), затем запусти программу снова.")
+		fmt.Println("Ошибка:", err)
+		waitEnter()
+		return
+	}
+	go reaper()
+	http.HandleFunc("/state", handleState)
+	http.HandleFunc("/reset", handleReset)
+	fmt.Println("Слушаю сеть. Адрес для Каравана:", "http://"+listenAddr)
+	if err := http.ListenAndServe(listenAddr, nil); err != nil {
+		fmt.Println("Не удалось открыть порт 48713:", err, "\nВозможно, счётчик уже запущен в другом окне.")
+		waitEnter()
+	}
+}
+
+func waitEnter() {
+	fmt.Println("Нажми Enter, чтобы закрыть.")
+	bufio.NewReader(os.Stdin).ReadString('\n')
+}
+
+func loadItems() {
+	for _, line := range strings.Split(itemsIndexRaw, "\n") {
+		sp := strings.IndexByte(line, ' ')
+		if sp <= 0 {
+			continue
+		}
+		if n, err := strconv.Atoi(line[:sp]); err == nil {
+			itemByIndex[n] = strings.TrimSpace(line[sp+1:])
+		}
+	}
+}
+
+/* ---------- приведение типов из Photon ---------- */
+
+func toI64(v interface{}) (int64, bool) {
+	switch x := v.(type) {
+	case int8:
+		return int64(x), true
+	case uint8:
+		return int64(x), true
+	case int16:
+		return int64(x), true
+	case uint16:
+		return int64(x), true
+	case int32:
+		return int64(x), true
+	case uint32:
+		return int64(x), true
+	case int64:
+		return x, true
+	case uint64:
+		return int64(x), true
+	case int:
+		return int64(x), true
+	case float32:
+		return int64(x), true
+	case float64:
+		return int64(x), true
+	}
+	return 0, false
+}
+func toF64(v interface{}) (float64, bool) {
+	switch x := v.(type) {
+	case float32:
+		return float64(x), true
+	case float64:
+		return x, true
+	}
+	if n, ok := toI64(v); ok {
+		return float64(n), true
+	}
+	return 0, false
+}
+
+// Массив любого числового типа → []float64
+func toF64s(v interface{}) []float64 {
+	switch x := v.(type) {
+	case []float32:
+		o := make([]float64, len(x))
+		for i, a := range x {
+			o[i] = float64(a)
+		}
+		return o
+	case []float64:
+		return x
+	case []int16:
+		o := make([]float64, len(x))
+		for i, a := range x {
+			o[i] = float64(a)
+		}
+		return o
+	case []int32:
+		o := make([]float64, len(x))
+		for i, a := range x {
+			o[i] = float64(a)
+		}
+		return o
+	case []int64:
+		o := make([]float64, len(x))
+		for i, a := range x {
+			o[i] = float64(a)
+		}
+		return o
+	case []byte:
+		o := make([]float64, len(x))
+		for i, a := range x {
+			o[i] = float64(a)
+		}
+		return o
+	case []interface{}:
+		o := make([]float64, len(x))
+		for i, a := range x {
+			o[i], _ = toF64(a)
+		}
+		return o
+	}
+	return nil
+}
+func toInts(v interface{}) []int {
+	f := toF64s(v)
+	o := make([]int, len(f))
+	for i, a := range f {
+		o[i] = int(a)
+	}
+	return o
+}
+func guidOf(v interface{}) string {
+	if mm, ok := v.(map[string]interface{}); ok {
+		v = mm["data"]
+	}
+	switch x := v.(type) {
+	case []byte:
+		if len(x) == 16 {
+			return hex.EncodeToString(x)
+		}
+	case []int8:
+		if len(x) == 16 {
+			b := make([]byte, 16)
+			for i, a := range x {
+				b[i] = byte(a)
+			}
+			return hex.EncodeToString(b)
+		}
+	case []interface{}:
+		if len(x) == 16 {
+			b := make([]byte, 16)
+			for i, a := range x {
+				n, _ := toI64(a)
+				b[i] = byte(n)
+			}
+			return hex.EncodeToString(b)
+		}
+	}
+	return ""
+}
+func guidsOf(v interface{}) []string {
+	if mm, ok := v.(map[string]interface{}); ok {
+		v = mm["data"]
+	}
+	switch x := v.(type) {
+	case []byte:
+		var o []string
+		for i := 0; i+16 <= len(x); i += 16 {
+			o = append(o, hex.EncodeToString(x[i:i+16]))
+		}
+		return o
+	case []interface{}:
+		var o []string
+		for _, a := range x {
+			o = append(o, guidOf(a))
+		}
+		return o
+	}
+	return nil
+}
+func stringsOf(v interface{}) []string {
+	switch x := v.(type) {
+	case []string:
+		return x
+	case []interface{}:
+		o := make([]string, len(x))
+		for i, a := range x {
+			o[i], _ = a.(string)
+		}
+		return o
+	}
+	return nil
+}
+
+func normalize(code uint16, known func(uint16) bool) uint16 {
+	if known(code) {
+		return code
+	}
+	if s := (code << 8) | (code >> 8); known(s) {
+		return s
+	}
+	return code
+}
+
+/* ---------- события ---------- */
+
+func onRequest(byte, map[byte]interface{}) {}
+
+func onResponse(_ byte, _ int16, _ string, p map[byte]interface{}) {
+	c, ok := toI64(p[253])
+	if !ok {
+		return
+	}
+	code := normalize(uint16(c), func(x uint16) bool { return x == opJoin })
+	if code != opJoin {
+		return
+	}
+	id, ok := toI64(p[0])
+	if !ok {
+		return
+	}
+	name, _ := p[2].(string)
+	g := guidOf(p[1])
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	st.selfID, st.selfName, st.selfGUID = id, name, g
+	pl := st.ensure(id)
+	pl.Name, pl.GUID = name, g
+	if name != "" {
+		st.byName[name] = id
+	}
+	if g != "" {
+		st.byGUID[g] = id
+	}
+}
+
+func onEvent(code byte, p map[byte]interface{}) {
+	c64, ok := toI64(p[252])
+	if !ok {
+		c64 = int64(code)
+	}
+	ev := normalize(uint16(c64), func(x uint16) bool { return knownEvents[x] })
+	if !knownEvents[ev] {
+		return
+	}
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	st.events++
+	switch ev {
+	case evNewCharacter:
+		id, ok := toI64(p[0])
+		if !ok {
+			return
+		}
+		pl := st.ensure(id)
+		pl.Name, _ = p[1].(string)
+		pl.Guild, _ = p[8].(string)
+		if g := guidOf(p[7]); g != "" {
+			pl.GUID = g
+			st.byGUID[g] = id
+		}
+		if pl.Name != "" {
+			st.byName[pl.Name] = id
+		}
+		if eq := toInts(p[40]); len(eq) > 0 {
+			pl.Equip = eq
+		}
+	case evCharacterEquipmentChanged:
+		id, ok := toI64(p[0])
+		if !ok {
+			return
+		}
+		if eq := toInts(p[2]); len(eq) > 0 {
+			st.ensure(id).Equip = eq
+		}
+	case evLeave:
+		// объект ушёл из видимости: данные игрока оставляем, чтобы бой досчитался
+	case evPartyJoined:
+		st.party = map[string]string{}
+		gs, ns := guidsOf(p[8]), stringsOf(p[9])
+		if len(gs) == 0 || len(ns) == 0 { // старый формат события
+			gs, ns = guidsOf(p[4]), stringsOf(p[5])
+		}
+		for i := 0; i < len(gs) && i < len(ns); i++ {
+			if gs[i] != "" && ns[i] != "" {
+				st.party[gs[i]] = ns[i]
+			}
+		}
+	case evPartyPlayerJoined:
+		if g := guidOf(p[1]); g != "" {
+			if n, _ := p[2].(string); n != "" {
+				st.party[g] = n
+			}
+		}
+	case evPartyPlayerLeft:
+		if g := guidOf(p[1]); g != "" {
+			delete(st.party, g)
+		}
+	case evPartyDisbanded:
+		st.party = map[string]string{}
+	case evHealthUpdate:
+		target, _ := toI64(p[0])
+		ch, ok := toF64(p[2])
+		if !ok {
+			return
+		}
+		causer, _ := toI64(p[6])
+		st.hit(target, causer, ch)
+	case evHealthUpdates:
+		target, _ := toI64(p[0])
+		chs := toF64s(p[2])
+		causers := toF64s(p[6])
+		for i, ch := range chs {
+			var cz int64
+			if i < len(causers) {
+				cz = int64(causers[i])
+			}
+			st.hit(target, cz, ch)
+		}
+	}
+}
+
+func (s *state) ensure(id int64) *player {
+	pl := s.players[id]
+	if pl == nil {
+		pl = &player{ObjectID: id}
+		s.players[id] = pl
+	}
+	return pl
+}
+
+// Член ли объект нашей пати (или мы сами, если пати нет)
+func (s *state) member(id int64) (*player, bool) {
+	pl := s.players[id]
+	if id == 0 || pl == nil {
+		return nil, false
+	}
+	if id == s.selfID {
+		return pl, true
+	}
+	if pl.GUID != "" {
+		if _, ok := s.party[pl.GUID]; ok {
+			return pl, true
+		}
+	}
+	for _, n := range s.party {
+		if n == pl.Name && n != "" {
+			return pl, true
+		}
+	}
+	return nil, false
+}
+
+func (s *state) hit(target, causer int64, change float64) {
+	if change == 0 {
+		return
+	}
+	now := time.Now().UnixMilli()
+	var who *player
+	if change < 0 {
+		if pl, ok := s.member(causer); ok && causer != target {
+			who = pl
+		}
+	} else if pl, ok := s.member(causer); ok {
+		who = pl
+	}
+	victim, victimIn := s.member(target)
+	if who == nil && !(change < 0 && victimIn) {
+		return
+	}
+	f := s.fightNow(now)
+	if who != nil {
+		x := f.stat(who, s.selfID)
+		if change < 0 {
+			x.Damage += -change
+		} else {
+			x.Heal += change
+		}
+		x.Hits++
+		if x.FirstHit == 0 {
+			x.FirstHit = now
+		}
+		x.LastHit = now
+	}
+	if change < 0 && victimIn {
+		f.stat(victim, s.selfID).Taken += -change
+	}
+	f.End = now
+}
+
+func (s *state) fightNow(now int64) *fight {
+	if s.cur != nil && now-s.cur.End > fightIdle.Milliseconds() {
+		s.closeFight()
+	}
+	if s.cur == nil {
+		s.cur = &fight{Start: now, End: now, Players: map[string]*stat{}}
+	}
+	return s.cur
+}
+
+func (f *fight) stat(pl *player, selfID int64) *stat {
+	key := pl.Name
+	if key == "" {
+		key = strconv.FormatInt(pl.ObjectID, 10)
+	}
+	x := f.Players[key]
+	if x == nil {
+		x = &stat{Name: key, Guild: pl.Guild, Self: pl.ObjectID == selfID}
+		f.Players[key] = x
+	}
+	x.Equip = equipNames(pl.Equip)
+	return x
+}
+
+func equipNames(eq []int) []string {
+	o := make([]string, 10)
+	for i := 0; i < 10 && i < len(eq); i++ {
+		if eq[i] > 0 {
+			o[i] = itemByIndex[eq[i]]
+		}
+	}
+	return o
+}
+
+func (s *state) closeFight() {
+	if s.cur == nil {
+		return
+	}
+	if len(s.cur.Players) > 0 && s.cur.End-s.cur.Start >= 3000 {
+		s.history = append([]*fight{s.cur}, s.history...)
+		if len(s.history) > 30 {
+			s.history = s.history[:30]
+		}
+	}
+	s.cur = nil
+}
+
+func reaper() {
+	for range time.Tick(2 * time.Second) {
+		st.mu.Lock()
+		if st.cur != nil && time.Now().UnixMilli()-st.cur.End > fightIdle.Milliseconds() {
+			st.closeFight()
+		}
+		st.mu.Unlock()
+	}
+}
+
+/* ---------- HTTP для Каравана ---------- */
+
+func cors(w http.ResponseWriter, r *http.Request) bool {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Private-Network", "true")
+	w.Header().Set("Cache-Control", "no-store")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return true
+	}
+	return false
+}
+
+type partyOut struct {
+	Name  string   `json:"name"`
+	Seen  bool     `json:"seen"`
+	Equip []string `json:"equip"`
+}
+
+func handleState(w http.ResponseWriter, r *http.Request) {
+	if cors(w, r) {
+		return
+	}
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	var party []partyOut
+	names := map[string]bool{}
+	add := func(name string, id int64, ok bool) {
+		if name == "" || names[name] {
+			return
+		}
+		names[name] = true
+		po := partyOut{Name: name}
+		if pl := st.players[id]; ok && pl != nil {
+			po.Seen, po.Equip = true, equipNames(pl.Equip)
+		}
+		party = append(party, po)
+	}
+	if st.selfName != "" {
+		add(st.selfName, st.selfID, true)
+	}
+	for g, n := range st.party {
+		id, ok := st.byGUID[g]
+		if !ok {
+			id, ok = st.byName[n]
+		}
+		add(n, id, ok)
+	}
+	sort.Slice(party, func(i, j int) bool { return party[i].Name < party[j].Name })
+	out := map[string]interface{}{
+		"ok": true, "version": 1, "now": time.Now().UnixMilli(), "self": st.selfName,
+		"devices": st.devices, "packets": st.packets, "events": st.events, "encrypted": st.encrypted, "lastPacket": st.lastPkt,
+		"party": party, "current": st.cur, "history": st.history,
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(out)
+}
+
+func handleReset(w http.ResponseWriter, r *http.Request) {
+	if cors(w, r) {
+		return
+	}
+	st.mu.Lock()
+	st.closeFight()
+	if r.URL.Query().Get("all") == "1" {
+		st.history = nil
+	}
+	st.mu.Unlock()
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -494,11 +494,12 @@ function onJournalClick(e) {
 }
 function showTab(tab) {
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-  $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm';
+  $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group';
   $('.how').hidden = tab !== 'run';
   if (tab === 'journal') renderJournal();
   if (tab === 'craft') renderCraft();
   if (tab === 'farm') renderFarm();
+  if (tab === 'group') { renderGroup(); gmStart(); } else if (typeof gmStop === 'function') gmStop();
 }
 
 /* ---------- окно и уведомление ---------- */

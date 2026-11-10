@@ -211,6 +211,24 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 .confbar{height:8px;background:var(--paper2);border:1px solid var(--rule);border-radius:99px;overflow:hidden}
 .confbar i{display:block;height:100%;background:var(--pgreen)}
 @media(max-width:480px){.cardtop{grid-template-columns:auto 1fr}.cardtop .x{position:absolute;top:16px;right:14px}.ic.big{width:64px;height:64px}.cdl{grid-template-columns:1fr 1fr}}
+.note.ok{background:#173326;border:1px solid #2F6B4C;color:#BFE8CF}
+.note a{color:inherit}
+.mrow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;padding-top:10px}
+.mname b{font-weight:700}
+.tag{display:inline-block;font-size:11.5px;font-weight:600;border:1px solid var(--rule);border-radius:99px;padding:1px 7px;color:var(--pmute);margin-left:4px}
+.mnum{text-align:right}.mnum b{display:block;font-size:18px}.mnum span{font-size:12.5px;color:var(--pmute)}
+.mbar{height:8px;background:var(--paper2);border-radius:99px;overflow:hidden;margin:6px 0 2px}
+.mbar i{display:block;height:100%}.mbar i.d{background:var(--seal)}.mbar i.h{background:var(--pgreen)}
+.flags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.flags span{background:#F3D9CF;color:#7A2618;border-radius:6px;padding:3px 8px;font-size:12.5px;font-weight:600}
+.gear{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 10px}
+.gslot{position:relative;width:46px;height:58px;border:1px solid var(--rule);border-radius:7px;background:var(--paper2);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;font-size:10px;color:var(--pmute)}
+.gslot img{width:42px;height:42px;object-fit:contain}
+.gslot b{position:absolute;top:2px;left:3px;font-size:10px;color:var(--pink);z-index:1}
+.gslot i{font-style:normal;position:absolute;bottom:1px;font-size:9px;white-space:nowrap}
+.gslot.empty{opacity:.45}
+.setup .gslot{background:var(--ink);border-color:var(--line);color:var(--mute)}.setup .gslot b{color:var(--bone)}
+.pmem{margin:8px 0 4px}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -234,6 +252,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
     <button role="tab" data-tab="journal" aria-selected="false">Журнал</button>
     <button role="tab" data-tab="craft" aria-selected="false">Крафт</button>
     <button role="tab" data-tab="farm" aria-selected="false">Остров</button>
+    <button role="tab" data-tab="group" aria-selected="false">Группа</button>
   </div>
 
   <main id="tab-run" class="grid">
@@ -304,6 +323,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
   <main id="tab-journal" hidden></main>
   <main id="tab-craft" class="grid" hidden></main>
   <main id="tab-farm" class="grid" hidden></main>
+  <main id="tab-group" class="grid" hidden></main>
 
   <details class="how">
     <summary>Как это считается</summary>
@@ -329,6 +349,9 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 </script>
 <script>
 /*__FARM__*/
+</script>
+<script>
+/*__GROUP__*/
 </script>
 </body>
 </html>
