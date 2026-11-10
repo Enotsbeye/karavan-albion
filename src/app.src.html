@@ -34,7 +34,7 @@ button{cursor:pointer}
 select{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 30px 9px 11px;appearance:none;-webkit-appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--mute) 50%),linear-gradient(135deg,var(--mute) 50%,transparent 50%);
   background-position:calc(100% - 15px) 55%,calc(100% - 10px) 55%;background-size:5px 5px;background-repeat:no-repeat;max-width:100%}
-.tabs{margin-bottom:14px}
+.tabs{margin-bottom:14px;flex-wrap:wrap}
 
 .grid{display:grid;gap:16px}
 @media(min-width:980px){.grid{grid-template-columns:400px 1fr;align-items:start}.setup{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}}
@@ -212,6 +212,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
     <button role="tab" data-tab="run" aria-selected="true">Рейс</button>
     <button role="tab" data-tab="journal" aria-selected="false">Журнал</button>
     <button role="tab" data-tab="craft" aria-selected="false">Крафт</button>
+    <button role="tab" data-tab="farm" aria-selected="false">Остров</button>
   </div>
 
   <main id="tab-run" class="grid">
@@ -277,6 +278,7 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 
   <main id="tab-journal" hidden></main>
   <main id="tab-craft" class="grid" hidden></main>
+  <main id="tab-farm" class="grid" hidden></main>
 
   <details class="how">
     <summary>Как это считается</summary>
@@ -296,6 +298,9 @@ details.left ul{padding-left:18px;margin:8px 0 0}
 </script>
 <script>
 /*__CRAFT__*/
+</script>
+<script>
+/*__FARM__*/
 </script>
 </body>
 </html>
