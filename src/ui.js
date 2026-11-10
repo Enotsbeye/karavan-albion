@@ -189,7 +189,7 @@ async function compareCities(demo) {
   } catch (e) { S.error = e.status === 429 ? 'limit' : (e.status ? 'http' + e.status : 'net'); S.busy = false; S.comparing = false; progress(null); updateGo(); return renderResult(); }
   const rows = srcs.map(city => {
     const c = Object.assign({}, cfg, { src: city }), cands = computeCandidates(items, prices, c, now); applyHistory(cands, hist);
-    const plan = makePlan(cands, c, new Map(), new Set()), g = riskFor(city), rm = riskMath(plan.totals, g, cfg.minutes);
+    const g = routeRisk(city, cfg.dst).p; c.riskP = g / 100; const plan = makePlan(cands, c, new Map(), new Set()), rm = riskMath(plan.totals, g, cfg.minutes);
     return { city, t: plan.totals, n: plan.rows.length, top: plan.rows[0] ? plan.rows[0].cand.item.name + ' ' + tierLabel(plan.rows[0].cand.item) : '', gank: g, ev: rm.ev };
   }).sort((a, b) => b.ev - a.ev);
   S.compare = { key: cmpKey(), time: now, rows, prices, hist, items, demo: !!demo };
@@ -208,11 +208,21 @@ function compareHTML() {
     <table class="cmp"><thead><tr><th>Купить в</th><th>Прибыль</th><th>С учётом риска</th><th>Вложить</th></tr></thead><tbody>
     ${C.rows.map(r => `<tr class="${r.city === cfg.src && S.scan && S.scan.src === r.city ? 'sel' : ''}"><td><button type="button" data-act="pick" data-city="${esc(r.city)}">${esc(cityName(r.city))}</button><small>${r.n ? esc(r.top) + (r.n > 1 ? ' и ещё ' + (r.n - 1) : '') : 'ничего выгодного'}</small></td>
       <td>${r.n ? fmtShort(r.t.exp) : '—'}</td><td class="${r.ev >= 0 ? 'pos' : 'negc'}">${r.n ? (r.ev >= 0 ? '' : '−') + fmtShort(Math.abs(r.ev)) : '—'}<small>риск ${r.gank}%</small></td><td>${r.n ? fmtShort(r.t.cost) : '—'}</td></tr>`).join('')}
-    </tbody></table><p class="imeta" style="margin-top:8px">Риск по умолчанию: 10% через красные и чёрные зоны, 1% между королевскими городами. Нажми на город, чтобы открыть его накладную.</p></div>`;
+    </tbody></table><p class="imeta" style="margin-top:8px">Риск берётся из твоего журнала по каждому маршруту, а пока рейсов мало — обычный: 10% через красные и чёрные зоны, 1% между королевскими городами. Нажми на город, чтобы открыть его накладную.</p></div>`;
 }
 
 /* ---------- расчёт и вывод ---------- */
-function planCfg() { return Object.assign({}, cfg, S.scan ? { src: S.scan.src, dst: S.scan.dst } : {}); }
+/* Шанс потерять груз: по твоему журналу на этом маршруте, пока рейсов мало — с поправкой на обычный риск маршрута */
+function riskDefault(src, dst) { if (src === 'Caerleon' && dst === 'Black Market') return 0; const r = ['Caerleon', 'Black Market', 'Brecilien']; return (r.includes(src) || r.includes(dst)) ? 10 : 1; }
+function routeRisk(src, dst) {
+  src = src || cfg.src; dst = dst || cfg.dst;
+  if (src === 'Caerleon' && dst === 'Black Market') return { p: 0, n: 0, lost: 0, src: 'safe' };
+  if (cfg.manualRisk) return { p: cfg.gank, n: 0, lost: 0, src: 'manual' };
+  const j = LS.get('karavan.journal', []).filter(r => r.src === src && r.dst === dst && (r.server || 'europe') === cfg.server && !r.demo);
+  const n = j.length, lost = j.filter(r => r.lost).length, prior = riskDefault(src, dst) / 100, k = 5;
+  return { p: Math.round((lost + prior * k) / (n + k) * 1000) / 10, n, lost, src: n ? 'journal' : 'default' };
+}
+function planCfg() { const base = Object.assign({}, cfg, S.scan ? { src: S.scan.src, dst: S.scan.dst } : {}); base.riskP = routeRisk(base.src, base.dst).p / 100; return base; }
 function recalc() {
   if (!S.scan) { renderResult(); return; }
   const c = planCfg();
@@ -284,7 +294,11 @@ function rowHTML(r, pc) {
   </div>`;
 }
 function riskFactsHTML() {
-  const t = S.plan.totals, rm = riskMath(t, sameCity() ? 0 : cfg.gank, cfg.minutes), out = [];
+  const rk = routeRisk(planCfg().src, planCfg().dst), t = S.plan.totals, rm = riskMath(t, rk.p, cfg.minutes), out = [];
+  if (rk.p > 0 && S.cands.length) {
+    const p = rk.p / 100, cut = S.cands.filter(c => c.profit * c.conf >= cfg.minPosProfit && c.profit * c.conf * (1 - p) - p * c.buy <= 0).length;
+    if (cut) out.push(`<div>Из-за риска не взято позиций с маленькой наценкой: <b>${cut}</b>. Если груз отнимут, они бы не окупились.</div>`);
+  }
   if (!sameCity()) {
     out.push(`<div>С учётом риска рейс в среднем даёт <b class="${rm.ev >= 0 ? 'pos' : 'negc'}">${rm.ev >= 0 ? '+' : '−'}${fmt(Math.abs(rm.ev))}</b></div>`);
     out.push(`<div>Один потерянный груз съедает прибыль <b>${isFinite(rm.runsPerGank) ? Math.ceil(rm.runsPerGank) : '—'}</b> удачных рейсов</div>`);
@@ -294,6 +308,12 @@ function riskFactsHTML() {
   return out.join('');
 }
 function updateRisk() { const el = $('#riskfacts'); if (el && S.plan) el.innerHTML = riskFactsHTML(); const o = $('#gankOut'); if (o) o.textContent = cfg.gank + '%'; }
+function riskSourceHTML(rk) {
+  if (rk.src === 'manual') return `Ты задал шанс вручную. <button type="button" class="linkbtn" data-act="riskauto">Считать по журналу</button>`;
+  const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов пока мало, поэтому оценка смешана с обычным риском маршрута.' : ''}`
+    : 'Рейсов по этому маршруту в журнале ещё нет, поэтому взят обычный риск маршрута. Завершай рейсы через «Завершить рейс», и оценка станет твоей.';
+  return base + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
+}
 
 function renderResult() {
   const el = $('#result'); let h = '';
@@ -325,7 +345,9 @@ function renderResult() {
     <div class="risk">
       <h3>Риск дороги</h3>
       ${sameCity() ? '<div style="font-size:14px">Чёрный рынок стоит в Каэрлеоне: везти груз через зоны не нужно.</div>'
-      : `<div class="riskctl"><label for="gank" style="font-size:13px;color:var(--pmute);grid-column:1/-1">Шанс потерять груз за один рейс</label><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}"><output id="gankOut" for="gank">${cfg.gank}%</output></div>`}
+      : (() => { const rk = routeRisk(pc.src, pc.dst); return `<div class="riskbig"><b>${String(rk.p).replace('.', ',')}%</b><span>шанс потерять груз за рейс</span></div><p class="imeta" style="margin:6px 0 0">${riskSourceHTML(rk)}</p>
+        ${rk.src === 'manual' ? `<div class="riskctl" style="margin-top:8px"><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}" aria-label="Шанс потерять груз за один рейс"><output id="gankOut" for="gank">${cfg.gank}%</output></div>` : ''}
+        <p class="imeta" style="margin:6px 0 0">Риск учтён в грузе: Караван выбирает вещи так, чтобы рейс окупался даже с учётом потерь.</p>`; })()}
       <div class="mins"><label for="minutes">Минут на рейс</label><input id="minutes" type="number" min="1" step="1" value="${cfg.minutes}"></div>
       <div class="riskfacts" id="riskfacts">${riskFactsHTML()}</div>
     </div>
@@ -417,6 +439,8 @@ function onResultClick(e) {
   if (act === 'retry') return scan(false);
   if (act === 'demo') return S.lastCompare ? compareCities(true) : scan(true);
   if (act === 'pick') return pickCity(a.dataset.city);
+  if (act === 'riskmanual') { cfg.manualRisk = true; cfg.gank = Math.round(routeRisk().p) || cfg.gank; saveCfg(); return recalc(); }
+  if (act === 'riskauto') { cfg.manualRisk = false; saveCfg(); return recalc(); }
   if (act === 'open') return openCard(key);
   if (act === 'lock' || act === 'lockbtn' || act === 'unlock') {
     if (!r) return;
@@ -437,7 +461,7 @@ function onResultChange(e) {
   if (t.id === 'minutes') { const v = parseFloat(t.value); if (v > 0) { cfg.minutes = v; saveCfg(); updateRisk(); } return; }
   if (t.dataset.act === 'price') { const key = t.closest('.item').dataset.key, L = S.locked.get(key); if (L) { L.actualBuy = parseSilver(t.value); recalc(); } }
 }
-function onResultInput(e) { if (e.target.id === 'gank') { cfg.gank = Number(e.target.value); saveCfg(); updateRisk(); } }
+function onResultInput(e) { if (e.target.id === 'gank') { cfg.gank = Number(e.target.value); saveCfg(); const o = $('#gankOut'); if (o) o.textContent = cfg.gank + '%'; clearTimeout(S.gankT); S.gankT = setTimeout(recalc, 250); } }
 
 function listText() {
   const pc = planCfg(), p = S.plan, order = pc.mode === 'order';
@@ -494,12 +518,14 @@ function onJournalClick(e) {
 }
 function showTab(tab) {
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
-  $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group';
+  $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta';
   $('.how').hidden = tab !== 'run';
   if (tab === 'journal') renderJournal();
   if (tab === 'craft') renderCraft();
   if (tab === 'farm') renderFarm();
   if (tab === 'group') { renderGroup(); gmStart(); } else if (typeof gmStop === 'function') gmStop();
+  if (tab === 'maps') mpStart(); else if (typeof mpStop === 'function') mpStop();
+  if (tab === 'meta') metaOpen();
 }
 
 /* ---------- окно и уведомление ---------- */

@@ -153,7 +153,10 @@ function buildUnits(c, cfg) {
   for (let k = 0; k < steps; k++) {
     const b = c.buy * Math.pow(1 + s, k), net = c.sell * Math.pow(1 - s, k) * (1 - fee), pu = net - b;
     if (pu <= 0 || pu / b * 100 < cfg.minRoi) break;
-    units.push({ c: b * lot, w: c.item.w * lot, p: pu * lot, e: pu * lot * c.conf });
+    /* Риск дороги: с шансом p теряем всю закупку этой штуки, поэтому вещи с маленькой наценкой становятся убыточными */
+    const p = cfg.riskP || 0, ev = pu * c.conf * (1 - p) - p * b;
+    if (ev <= 0) break;
+    units.push({ c: b * lot, w: c.item.w * lot, p: pu * lot, e: ev * lot });
   }
   return { units, lot };
 }

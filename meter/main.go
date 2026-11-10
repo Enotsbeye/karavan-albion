@@ -12,9 +12,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,10 +37,14 @@ const (
 	evPartyDisbanded            = 231
 	evPartyPlayerJoined         = 232
 	evPartyPlayerLeft           = 234
+	evTakeSilver                = 62
+	evUpdateFame                = 82
+	evOtherGrabbedLoot          = 278
 	opJoin                      = 2
+	opChangeCluster             = 41
 )
 
-var knownEvents = map[uint16]bool{evLeave: true, evHealthUpdate: true, evHealthUpdates: true, evNewCharacter: true, evCharacterEquipmentChanged: true, evPartyJoined: true, evPartyDisbanded: true, evPartyPlayerJoined: true, evPartyPlayerLeft: true}
+var knownEvents = map[uint16]bool{evTakeSilver: true, evUpdateFame: true, evOtherGrabbedLoot: true, evLeave: true, evHealthUpdate: true, evHealthUpdates: true, evNewCharacter: true, evCharacterEquipmentChanged: true, evPartyJoined: true, evPartyDisbanded: true, evPartyPlayerJoined: true, evPartyPlayerLeft: true}
 
 //go:embed items_index.txt
 var itemsIndexRaw string
@@ -87,6 +93,19 @@ type state struct {
 	encrypted int64
 	devices   []string
 	lastPkt   int64
+	visit     *visit
+	visits    []*visit
+}
+
+// Заход на карту: сколько лута, серебра и славы собрала пати за время на карте
+type visit struct {
+	Map    string         `json:"map"`
+	Start  int64          `json:"start"`
+	End    int64          `json:"end"`
+	Party  int            `json:"party"`
+	Silver float64        `json:"silver"`
+	Fame   float64        `json:"fame"`
+	Loot   map[string]int `json:"loot"`
 }
 
 var st = &state{players: map[int64]*player{}, byGUID: map[string]int64{}, byName: map[string]int64{}, party: map[string]string{}}
@@ -94,7 +113,8 @@ var st = &state{players: map[int64]*player{}, byGUID: map[string]int64{}, byName
 func main() {
 	log.SetFlags(log.Ltime)
 	loadItems()
-	fmt.Println("Караван: счётчик урона группы")
+	loadVisits()
+	fmt.Println("Караван: счётчик урона группы и журнал карт")
 	fmt.Println("Не закрывай это окно, пока играешь. Данные смотри во вкладке «Группа» в Караване.")
 	if err := startCapture(); err != nil {
 		fmt.Println()
@@ -106,6 +126,8 @@ func main() {
 	go reaper()
 	http.HandleFunc("/state", handleState)
 	http.HandleFunc("/reset", handleReset)
+	http.HandleFunc("/maps", handleMaps)
+	http.HandleFunc("/gi", handleGameinfo)
 	fmt.Println("Слушаю сеть. Адрес для Каравана:", "http://"+listenAddr)
 	if err := http.ListenAndServe(listenAddr, nil); err != nil {
 		fmt.Println("Не удалось открыть порт 48713:", err, "\nВозможно, счётчик уже запущен в другом окне.")
@@ -306,9 +328,20 @@ func onResponse(_ byte, _ int16, _ string, p map[byte]interface{}) {
 	if !ok {
 		return
 	}
-	code := normalize(uint16(c), func(x uint16) bool { return x == opJoin })
+	code := normalize(uint16(c), func(x uint16) bool { return x == opJoin || x == opChangeCluster })
+	if code == opChangeCluster {
+		if mp, ok := p[0].(string); ok && mp != "" {
+			st.mu.Lock()
+			st.enterMap(mp)
+			st.mu.Unlock()
+		}
+		return
+	}
 	if code != opJoin {
 		return
+	}
+	if mp, ok := p[8].(string); ok && mp != "" {
+		defer func() { st.mu.Lock(); st.enterMap(mp); st.mu.Unlock() }()
 	}
 	id, ok := toI64(p[0])
 	if !ok {
@@ -393,6 +426,39 @@ func onEvent(code byte, p map[byte]interface{}) {
 		}
 	case evPartyDisbanded:
 		st.party = map[string]string{}
+	case evOtherGrabbedLoot:
+		looter, _ := p[2].(string)
+		if !s_isMember(looter) {
+			return
+		}
+		qty, _ := toI64(p[5])
+		if qty <= 0 {
+			qty = 1
+		}
+		v := st.curVisit()
+		if silver, _ := p[3].(bool); silver {
+			v.Silver += float64(qty)
+			return
+		}
+		idx, _ := toI64(p[4])
+		if uid := itemByIndex[int(idx)]; uid != "" && !strings.Contains(uid, "TRASH") {
+			v.Loot[uid] += int(qty)
+		}
+	case evTakeSilver:
+		who, _ := toI64(p[0])
+		if _, ok := st.member(who); !ok {
+			return
+		}
+		y, _ := toF64(p[3])
+		ct, _ := toF64(p[4])
+		gt, _ := toF64(p[5])
+		if net := (y - ct - gt) / 10000; net > 0 {
+			st.curVisit().Silver += net
+		}
+	case evUpdateFame:
+		if f, ok := toF64(p[2]); ok && f > 0 {
+			st.curVisit().Fame += f / 10000
+		}
 	case evHealthUpdate:
 		target, _ := toI64(p[0])
 		ch, ok := toF64(p[2])
@@ -611,4 +677,131 @@ func handleReset(w http.ResponseWriter, r *http.Request) {
 	}
 	st.mu.Unlock()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+/* ---------- заходы на карты ---------- */
+
+func s_isMember(name string) bool {
+	if name == "" {
+		return false
+	}
+	if name == st.selfName {
+		return true
+	}
+	for _, n := range st.party {
+		if n == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *state) curVisit() *visit {
+	if s.visit == nil {
+		s.visit = &visit{Map: "?", Start: time.Now().UnixMilli(), Loot: map[string]int{}}
+	}
+	if n := len(s.party); n > s.visit.Party {
+		s.visit.Party = n
+	}
+	if s.visit.Party == 0 {
+		s.visit.Party = 1
+	}
+	s.visit.End = time.Now().UnixMilli()
+	return s.visit
+}
+
+func (s *state) enterMap(mp string) {
+	now := time.Now().UnixMilli()
+	if s.visit != nil && s.visit.Map == mp {
+		return
+	}
+	if v := s.visit; v != nil {
+		v.End = now
+		if v.End-v.Start >= 60000 {
+			s.visits = append(s.visits, v)
+			if len(s.visits) > 3000 {
+				s.visits = s.visits[len(s.visits)-3000:]
+			}
+			saveVisits(s.visits)
+		}
+	}
+	party := len(s.party)
+	if party == 0 {
+		party = 1
+	}
+	s.visit = &visit{Map: mp, Start: now, End: now, Party: party, Loot: map[string]int{}}
+}
+
+func visitsPath() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "karavan-maps.json"
+	}
+	return filepath.Join(filepath.Dir(exe), "karavan-maps.json")
+}
+
+func saveVisits(v []*visit) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return
+	}
+	tmp := visitsPath() + ".tmp"
+	if os.WriteFile(tmp, b, 0644) == nil {
+		os.Rename(tmp, visitsPath())
+	}
+}
+
+func loadVisits() {
+	b, err := os.ReadFile(visitsPath())
+	if err != nil {
+		return
+	}
+	var v []*visit
+	if json.Unmarshal(b, &v) == nil {
+		st.visits = v
+	}
+}
+
+func handleMaps(w http.ResponseWriter, r *http.Request) {
+	if cors(w, r) {
+		return
+	}
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "current": st.visit, "visits": st.visits, "now": time.Now().UnixMilli()})
+}
+
+/* ---------- киллборд для мета-сетов: браузер не может обратиться к нему напрямую ---------- */
+
+var giHosts = map[string]string{"europe": "gameinfo-ams.albiononline.com", "west": "gameinfo.albiononline.com", "east": "gameinfo-sgp.albiononline.com"}
+var giClient = &http.Client{Timeout: 20 * time.Second}
+
+func handleGameinfo(w http.ResponseWriter, r *http.Request) {
+	if cors(w, r) {
+		return
+	}
+	q := r.URL.Query()
+	host := giHosts[q.Get("server")]
+	if host == "" {
+		http.Error(w, "unknown server", http.StatusBadRequest)
+		return
+	}
+	limit, _ := strconv.Atoi(q.Get("limit"))
+	offset, _ := strconv.Atoi(q.Get("offset"))
+	if limit <= 0 || limit > 51 {
+		limit = 51
+	}
+	if offset < 0 || offset > 10000 {
+		offset = 0
+	}
+	resp, err := giClient.Get(fmt.Sprintf("https://%s/api/gameinfo/events?limit=%d&offset=%d", host, limit, offset))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(resp.StatusCode)
+	io.Copy(w, io.LimitReader(resp.Body, 8<<20))
 }

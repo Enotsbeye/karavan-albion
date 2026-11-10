@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -77,4 +78,32 @@ func TestFightFlow(t *testing.T) {
 	if _, ok := st.party[guidOf(gb(2))]; ok {
 		t.Fatal("игрок не удалён из пати")
 	}
+}
+
+func TestMapsAndLoot(t *testing.T) {
+	st.mu.Lock()
+	st.visits = nil
+	st.visit = nil
+	st.mu.Unlock()
+	onResponse(1, 0, "", map[byte]interface{}{253: int16(41), 0: "4325"})
+	onEvent(1, map[byte]interface{}{252: int16(278), 1: "MOB_X", 2: "Enot", 3: false, 4: int32(8620), 5: int32(2)})
+	onEvent(1, map[byte]interface{}{252: int16(278), 1: "MOB_X", 2: "Stranger", 3: false, 4: int32(2888), 5: int32(1)})
+	onEvent(1, map[byte]interface{}{252: int16(278), 1: "MOB_X", 2: "Enot", 3: true, 4: int32(0), 5: int32(500)})
+	onEvent(1, map[byte]interface{}{252: int16(62), 0: int64(100), 3: int64(20000000), 4: int64(1000000), 5: int64(0)})
+	onEvent(1, map[byte]interface{}{252: int16(82), 2: int64(150000000)})
+	st.mu.Lock()
+	v := st.visit
+	if v == nil || v.Map != "4325" || v.Loot["T6_MAIN_SWORD"] != 2 || v.Loot["T4_BAG"] != 0 || v.Silver != 500+1900 || v.Fame != 15000 {
+		st.mu.Unlock()
+		t.Fatalf("заход: %+v", v)
+	}
+	v.Start -= 120000
+	st.mu.Unlock()
+	onResponse(1, 0, "", map[byte]interface{}{253: int16(41), 0: "0201"})
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if len(st.visits) != 1 || st.visits[0].Map != "4325" || st.visit.Map != "0201" {
+		t.Fatalf("заходы: %d, текущий %+v", len(st.visits), st.visit)
+	}
+	os.Remove(visitsPath())
 }
