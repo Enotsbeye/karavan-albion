@@ -1,6 +1,6 @@
 "use strict";
 /* ===== Караван: остров ===== */
-const FDEF = { city: 'Martlock', farm: 0, herb: 0, pasture: 0, kennel: 0, slots: 9, fday: 0, mult: 1, ownFood: true, buyOrder: true, v: 2 };
+const FDEF = { city: 'Martlock', farm: 0, herb: 0, pasture: 0, kennel: 0, slots: 9, wFarm: 0, wHerb: 0, wPasture: 0, wKennel: 0, fdisc: 0, mult: 1, ownFood: true, buyOrder: true, v: 2 };
 const FSAVED = LS.get('karavan.farm', {});
 const FM = { cfg: Object.assign({}, FDEF, FSAVED), busy: false, scan: null, error: null };
 if (FSAVED.v !== 2) Object.assign(FM.cfg, { farm: 0, herb: 0, pasture: 0, kennel: 0, v: 2 });
@@ -103,7 +103,10 @@ function farmSetupHTML() {
     <div class="two fld">${num('fPasture', 'Пастбищ', c.pasture, 0, 30)}${num('fKennel', 'Питомников', c.kennel, 0, 30)}</div>
     <div class="two fld">${num('fSlots', 'Мест на одном участке', c.slots, 1, 20)}${num('fMult', 'Множитель урожая', c.mult, 0.1, 5, 0.1)}</div>
     <div class="hint" style="margin-top:-6px;margin-bottom:12px">Множитель — если в игре урожай или продукт другой, чем в расчёте, поставь, например, 0,5 или 2.</div>
-    <div class="fld">${num('fFday', 'Фокус в день на остров', c.fday || 0, 0, 30000, 500)}<div class="hint">Караван сам решит, какие грядки поливать и каких животных кормить с фокусом: туда, где очко фокуса даёт больше серебра. 0 — без фокуса.</div></div>
+    <span class="lbl">Сколько участков поливать или кормить с фокусом</span>
+    <div class="two fld">${num('fwFarm', 'Полей с фокусом', Math.min(c.wFarm || 0, c.farm), 0, c.farm)}${num('fwHerb', 'Садов с фокусом', Math.min(c.wHerb || 0, c.herb), 0, c.herb)}</div>
+    <div class="two fld">${num('fwPasture', 'Пастбищ с фокусом', Math.min(c.wPasture || 0, c.pasture), 0, c.pasture)}${num('fwKennel', 'Питомников с фокусом', Math.min(c.wKennel || 0, c.kennel), 0, c.kennel)}</div>
+    <div class="fld">${num('fDisc', 'Скидка фокуса от мастерства, %', c.fdisc || 0, 0, 90, 1)}<div class="hint">Посмотри в игре, сколько фокуса стоит полить одну грядку, и подбери скидку, чтобы расход совпал.</div></div>
     <div class="rowline" style="flex-direction:column;align-items:flex-start;gap:10px">
 
       <label class="switch"><input type="checkbox" id="fOwn" ${c.ownFood ? 'checked' : ''}> Кормить своим урожаем</label>
@@ -119,32 +122,36 @@ function farmResultHTML() {
   const c = FM.cfg, s = FM.scan, rows = farmCalc(s.P, Object.assign({}, c, { city: s.city }), Date.now());
   if (s.demo) h += `<div class="note warn">Демо: цены выдуманы, чтобы показать, как выглядит расчёт.</div>`;
   const groups = [['farm', c.farm], ['herbgarden', c.herb], ['pasture', c.pasture], ['kennel', c.kennel]];
-  let total = 0, focusLeft = c.fday || 0, focusUsed = 0; const plan = [], picks = [];
-  for (const [k, n] of groups) { const best = rows.filter(r => r.kind === k).sort((a, b) => b.pn - a.pn)[0]; if (best && n > 0 && best.pn > 0) picks.push({ k, n, best, places: n * c.slots, watered: 0 }); }
-  /* Фокус раздаём местам, где одно очко добавляет больше всего серебра */
-  for (const pk of picks.slice().sort((a, b) => ((b.best.pf - b.best.pn) / (b.best.fday || 1e9)) - ((a.best.pf - a.best.pn) / (a.best.fday || 1e9)))) {
-    const r = pk.best; if (!r.fday || r.pf <= r.pn || focusLeft < r.fday) continue;
-    pk.watered = Math.min(pk.places, Math.floor(focusLeft / r.fday)); focusLeft -= pk.watered * r.fday; focusUsed += pk.watered * r.fday;
-  }
-  for (const pk of picks) {
-    const r = pk.best, v = r.pn * pk.places + (r.pf - r.pn) * pk.watered; total += v;
-    plan.push(`${FKIND[pk.k]} ×${pk.n}: ${r.name} T${r.t}, +${fmtShort(v)} в день${pk.watered ? `, с фокусом ${pk.watered} из ${pk.places} мест` : ''}`);
+  let total = 0, focusUsed = 0; const plan = [], disc = 1 - (c.fdisc || 0) / 100;
+  const wOf = { farm: c.wFarm, herbgarden: c.wHerb, pasture: c.wPasture, kennel: c.wKennel };
+  for (const [k, n] of groups) {
+    if (!(n > 0)) continue;
+    const w = Math.min(n, wOf[k] || 0), list = rows.filter(r => r.kind === k);
+    /* На участки с фокусом берём то, что выгоднее с фокусом, на остальные — то, что выгоднее без него */
+    const bestN = list.slice().sort((a, b) => b.pn - a.pn)[0], bestF = list.slice().sort((a, b) => b.pf - a.pf)[0];
+    if (!bestN) continue;
+    const vN = Math.max(0, bestN.pn) * c.slots * (n - w), vF = w && bestF ? Math.max(0, bestF.pf) * c.slots * w : 0, fz = w && bestF ? bestF.fday * disc * c.slots * w : 0;
+    total += vN + vF; focusUsed += fz;
+    const parts = [];
+    if (n - w > 0 && bestN.pn > 0) parts.push(`${n - w} — ${bestN.name} T${bestN.t}`);
+    if (w && bestF && bestF.pf > 0) parts.push(`${w} с фокусом — ${bestF.name} T${bestF.t}`);
+    if (parts.length) plan.push(`${FKIND[k]} ×${n}: ${parts.join('; ')}, +${fmtShort(vN + vF)} в день`);
   }
   h += `<div class="sheet"><div class="sheethead"><h2>План острова</h2><span>${esc(cityName(s.city))}, цены в ${new Date(s.time).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}</span></div>
-    <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${c.fday ? ` Фокуса уходит ${fmt(focusUsed)} из ${fmt(c.fday)} в день.` : ''}</small></div>
+    <div class="sum"><div class="big"><span>Прибыль острова в день</span><b>${fmt(total)}</b><small>${total > 0 ? 'За месяц около ' + fmtShort(total * 30) + '.' : 'При этих ценах участки не приносят прибыли.'}${focusUsed ? ` Фокуса нужно около ${fmt(focusUsed)} в день.` : ''}</small></div>
     <div style="font-size:14px">${plan.length ? plan.map(p => `<div style="margin:4px 0">${esc(p)}</div>`).join('') : 'Укажи кнопками + слева, сколько у тебя полей, садов, пастбищ и питомников, и план соберётся.'}</div></div>`;
   for (const [k] of groups) {
     const list = rows.filter(r => r.kind === k).sort((a, b) => b.pn - a.pn).slice(0, 8); if (!list.length) continue;
     h += `<div class="list"><div class="listhead"><h3>${FKIND[k]}</h3><span>прибыль в день с одного места</span></div>${list.map(r => `<div class="item"><div class="irow" style="grid-template-columns:auto 1fr auto">
       <span class="ic">T${r.t}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${r.icon}.png?size=64" onerror="this.remove()"></span>
-      <div style="min-width:0"><div class="iname">${esc(r.name)}</div><div class="imeta">${r.note}</div><div class="imeta">${r.vol != null ? 'продаётся около ' + fmt(r.vol) + ' в день' : 'объём продаж неизвестен'}</div>${!r.product && r.pf > r.pn && r.fday ? `<div class="imeta">Фокус: +${fmt(r.pf - r.pn)} в день за ${fmt(r.fday)} очков (${((r.pf - r.pn) / r.fday).toFixed(1).replace('.', ',')} серебра за очко)${r.fnote ? ', ' + esc(r.fnote) : ''}</div>` : ''}</div>
+      <div style="min-width:0"><div class="iname">${esc(r.name)}</div><div class="imeta">${r.note}</div><div class="imeta">${r.vol != null ? 'продаётся около ' + fmt(r.vol) + ' в день' : 'объём продаж неизвестен'}</div>${!r.product && r.pf > r.pn && r.fday ? `<div class="imeta">Фокус: +${fmt(r.pf - r.pn)} в день за ${fmt(r.fday * (1 - (c.fdisc || 0) / 100))} очков (${((r.pf - r.pn) / (r.fday * (1 - (c.fdisc || 0) / 100) || 1)).toFixed(1).replace('.', ',')} серебра за очко)${r.fnote ? ', ' + esc(r.fnote) : ''}</div>` : ''}</div>
       <div class="iprofit"><b class="${r.perDay >= 0 ? '' : 'negc'}" style="${r.perDay >= 0 ? '' : 'color:var(--pred)'}">${r.perDay >= 0 ? '+' : '−'}${fmtShort(Math.abs(r.perDay))}</b><span>×${c.slots}: ${fmtShort(r.perDay * c.slots)}</span></div></div></div>`).join('')}</div>`;
   }
   h += `<p class="imeta" style="margin-top:12px">Урожай, шанс вернуть семя или детёныша, расход корма и фокуса взяты из данных игры. Вернувшееся семя сажается снова, лишние семена продаются. Корм считается самым дешёвым подходящим на рынке, любимый корм животного даёт вдвое больше питания. Продажа считается по лучшему из двух вариантов: свой ордер на продажу или сдать в ордер на покупку, с налогом. Для продуктов (молоко, яйца) не учтена стоимость самого животного: её нужно вырастить один раз.</p></div>`;
   return h;
 }
 function renderFarm() { const el = $('#tab-farm'); if (el.hidden) return; el.innerHTML = farmSetupHTML() + `<section aria-live="polite">${farmResultHTML()}</section>`; }
-const FMAP = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult', fFday: 'fday' };
+const FMAP = { fFarm: 'farm', fHerb: 'herb', fPasture: 'pasture', fKennel: 'kennel', fSlots: 'slots', fMult: 'mult', fwFarm: 'wFarm', fwHerb: 'wHerb', fwPasture: 'wPasture', fwKennel: 'wKennel', fDisc: 'fdisc' };
 function farmSetNum(input, v) {
   const min = +input.dataset.min, max = +input.dataset.max, step = +input.dataset.step;
   v = Math.min(max, Math.max(min, Math.round(v / step) * step));
