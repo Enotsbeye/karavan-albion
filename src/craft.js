@@ -179,7 +179,7 @@ function craftSetupHTML() {
     <details class="adv" style="margin-bottom:12px"><summary>Шансы качества при крафте</summary>
       <div class="advgrid" style="grid-template-columns:repeat(5,1fr)">${QN.slice(1).map((n, i) => `<div><label for="cQ${i}" style="min-height:2.6em">${n}, %</label><input id="cQ${i}" data-q="${i}" type="number" min="0" step="0.01" value="${(c.qp || QDEF)[i]}"></div>`).join('')}</div>
       <div class="hint">Примерные шансы без бонусов. Специализация и еда на качество повышают шанс высоких качеств — поправь под себя. Сумма не обязана быть 100, Караван сам приведёт к долям.</div></details>
-    <div class="fld"><label for="cFee">Плата станции за одну вещь, серебро</label><input id="cFee" type="number" min="0" step="100" value="${c.fee}"><div class="hint">Посмотри в окне станции перед крафтом. Налог с продажи и премиум берутся из вкладки «Рейс».</div></div>
+    <div class="fld"><label for="cFee">Плата станции за одну вещь, серебро</label><input id="cFee" type="number" min="0" step="100" value="${c.fee}"><div class="hint">Сверь с окном станции перед крафтом.</div></div>
     <button class="go" type="button" data-c="scan" ${CF.busy || !items.length ? 'disabled' : ''}>${CF.busy ? 'Проверяю цены…' : CF.scan ? 'Обновить цены' : 'Найти выгодный крафт'}</button>
     <div class="gocap">${items.length ? fmt(items.length) + ' рецептов' : 'Под эти фильтры рецептов нет'}</div>
     <div class="bar" id="cbar" hidden><i></i></div></section>`;

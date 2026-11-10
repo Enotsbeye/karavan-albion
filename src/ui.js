@@ -81,6 +81,8 @@ function initForm() {
   $('#auto').addEventListener('change', e => { cfg.auto = e.target.checked; saveCfg(); if (cfg.auto) toast('Цены обновятся сами, пока окно открыто.'); autoTick(); });
   $('#fresh').addEventListener('change', e => { cfg.fresh = e.target.checked; cfg.maxAge = cfg.fresh ? 6 : 24; $('#maxAge').value = cfg.maxAge; saveCfg(); recalc(); if ($('#tab-craft') && !$('#tab-craft').hidden && typeof craftRecalc === 'function') craftRecalc(); if (typeof renderFarm === 'function') renderFarm(); });
   $('#go').addEventListener('click', () => { S.lastCompare = false; scan(false); });
+  $('#result').addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('riskline')) S.riskOpen = e.target.open; }, true);
+  $('#moreBtn').addEventListener('click', () => { const m = $('#runmore'), b = $('#moreBtn'); m.hidden = !m.hidden; b.setAttribute('aria-expanded', String(!m.hidden)); });
   $('#cmpgo').addEventListener('click', () => { S.lastCompare = true; compareCities(false); });
   document.querySelector('.tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) showTab(t.dataset.tab); });
   updateGo();
@@ -316,15 +318,14 @@ function detailHTML(r, pc) {
 }
 function rowHTML(r, pc) {
   const c = r.cand, it = c.item, open = S.open === r.key;
-  const dot = c.conf >= 0.55 ? 'g' : c.conf >= 0.25 ? 'a' : 'r';
+  const dot = c.conf >= 0.55 ? 'g' : c.conf >= 0.25 ? 'a' : 'r', ages = 'Цены записаны ' + fmtAge(c.ageB) + ' и ' + fmtAge(c.ageS) + ' назад';
   return `<div class="item${r.locked ? ' done' : ''}" data-key="${esc(r.key)}">
-    <div class="irow">
+    <div class="irow min">
       <input type="checkbox" class="chk" data-act="lock" ${r.locked ? 'checked' : ''} aria-label="Куплено: ${esc(it.name)} ${tierLabel(it)}">
       <span class="ic">${tierLabel(it)}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${c.id}.png?size=64&amp;quality=${c.qb}" onerror="this.remove()"></span>
-      <button type="button" class="imain" data-act="open" aria-haspopup="dialog">
+      <button type="button" class="imain" data-act="open" aria-haspopup="dialog" title="${esc(ages)}">
         <div class="iname">${esc(it.name)}</div>
-        <div class="imeta"><b>${tierLabel(it)}</b>${it.gear ? ', ' + QN[c.qb].toLowerCase() : ''}, <b>${fmt(r.qty)} шт.</b> по ${fmt(r.cost / r.qty)}</div>
-        <div class="imeta"><span class="dot ${dot}"></span>цены ${fmtAge(c.ageB)} и ${fmtAge(c.ageS)} назад</div>
+        <div class="imeta"><span class="dot ${dot}" aria-label="${esc(ages)}"></span>${tierLabel(it)} · ${fmt(r.qty)} шт.</div>
       </button>
       <div class="iprofit"><b>+${fmtShort(r.profit)}</b><span>${fmtShort(r.cost)}</span></div>
     </div>${r.locked && open ? detailHTML(r, pc) : ''}
@@ -334,24 +335,22 @@ function riskFactsHTML() {
   const rk = routeRisk(planCfg().src, planCfg().dst), t = S.plan.totals, rm = riskMath(t, rk.p, cfg.minutes), out = [];
   if (rk.p > 0 && S.cands.length) {
     const p = rk.p / 100, cut = S.cands.filter(c => c.profit * c.conf >= cfg.minPosProfit && c.profit * c.conf * (1 - p) - p * c.buy <= 0).length;
-    if (cut) out.push(`<div>Из-за риска не взято позиций с маленькой наценкой: <b>${cut}</b>. Если груз отнимут, они бы не окупились.</div>`);
+    if (cut) out.push(`<div>Не взято из-за риска позиций с малой наценкой: <b>${cut}</b></div>`);
   }
   if (!sameCity()) {
-    out.push(`<div>С учётом риска рейс в среднем даёт <b class="${rm.ev >= 0 ? 'pos' : 'negc'}">${rm.ev >= 0 ? '+' : '−'}${fmt(Math.abs(rm.ev))}</b></div>`);
-    out.push(`<div>Один потерянный груз съедает прибыль <b>${isFinite(rm.runsPerGank) ? Math.ceil(rm.runsPerGank) : '—'}</b> удачных рейсов</div>`);
-    out.push(`<div>Рейс выгоден, пока шанс потери ниже <b>${rm.breakEven.toFixed(0)}%</b></div>`);
+    out.push(`<div>Одна потеря съедает прибыль <b>${isFinite(rm.runsPerGank) ? Math.ceil(rm.runsPerGank) : '—'}</b> рейсов</div>`);
+    out.push(`<div>Рейс выгоден при риске ниже <b>${rm.breakEven.toFixed(0)}%</b></div>`);
   }
-  if (rm.perHour != null) out.push(`<div>Это около <b>${fmtShort(rm.perHour)}</b> серебра в час</div>`);
   return out.join('');
 }
 function updateRisk() { const el = $('#riskfacts'); if (el && S.plan) el.innerHTML = riskFactsHTML(); const o = $('#gankOut'); if (o) o.textContent = cfg.gank + '%'; }
 function riskSourceHTML(rk) {
   if (rk.src === 'manual') return `Ты задал шанс вручную. <button type="button" class="linkbtn" data-act="riskauto">Считать по журналу</button>`;
-  const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов пока мало, поэтому оценка смешана с обычным риском маршрута.' : ''}`
-    : 'Рейсов по этому маршруту в журнале ещё нет, поэтому взят обычный риск маршрута. Завершай рейсы через «Завершить рейс», и оценка станет твоей.';
+  const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов мало, оценка смешана с обычным риском.' : ''}`
+    : 'Рейсов по маршруту в журнале нет, взят обычный риск. Завершай рейсы кнопкой «Завершить рейс», и оценка станет точнее.';
   const a = rk.act;
   const actTxt = !a ? ' Активность сервера ещё не замерена.'
-    : ` Сейчас на сервере ${a.rate.toFixed(1).replace('.', ',')} убийств в минуту${a.base ? `, это в ${a.factor.toFixed(1).replace('.', ',')} раза ${a.factor >= 1 ? 'больше' : 'меньше'} обычного для этого часа, поэтому риск ${a.factor >= 1 ? 'повышен' : 'снижен'} с ${String(rk.base).replace('.', ',')}%` : `. Для сравнения с обычным уровнем нужно ещё ${3 - a.samples} ${plural(3 - a.samples, 'замер', 'замера', 'замеров')} в этот же час в другие дни`}${a.prime ? '. Похоже на прайм-тайм' : ''}.`;
+    : ` Сейчас на сервере ${a.rate.toFixed(1).replace('.', ',')} убийств в минуту${a.base ? `, это в ${a.factor.toFixed(1).replace('.', ',')} раза ${a.factor >= 1 ? 'больше' : 'меньше'} обычного для этого часа, поэтому риск ${a.factor >= 1 ? 'повышен' : 'снижен'} с ${String(rk.base).replace('.', ',')}%` : `. Для сравнения нужно ещё ${3 - a.samples} ${plural(3 - a.samples, 'замер', 'замера', 'замеров')} в этот час`}${a.prime ? '. Похоже на прайм-тайм' : ''}.`;
   return base + actTxt + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
 }
 
@@ -373,24 +372,20 @@ function renderResult() {
   const roi = t.cost > 0 ? (t.profit / t.cost * 100) : 0;
   const nLocked = p.rows.filter(r => r.locked).length;
   h += `<div class="sheet">
-    <div class="sheethead"><h2>Накладная</h2><span>${esc(cityName(pc.src))} → ${esc(cityName(pc.dst))}, цены загружены в ${hhmm(S.scan.time)}</span></div>
-    <div class="sum">
-      <div class="big"><span>Ожидаемая прибыль с рейса</span><b>${fmt(t.exp)}</b><small>По ценам из базы ${fmt(t.profit)}. Поправка на устаревшие цены: −${adj}%</small></div>
-      <div>
-        <dl class="kv"><div><dt>Вложить</dt><dd>${fmtShort(t.cost)}</dd></div><div><dt>Вернётся</dt><dd>${fmtShort(t.net)}</dd></div><div><dt>Доходность</dt><dd>${roi.toFixed(0)}%</dd></div></dl>
-        ${gaugeHTML('Серебро', { raw: t.cost, txt: fmtShort(t.cost), capTxt: fmtShort(p.budget) }, p.budget, '')}
-        ${isFinite(p.weightCap) ? gaugeHTML('Вес', { raw: t.weight, txt: Math.round(t.weight), capTxt: Math.round(p.weightCap) }, p.weightCap, 'кг') : gaugeHTML('Вес', Math.round(t.weight), Infinity, 'кг')}
-      </div>
+    <div class="sheethead"><h2>${esc(cityName(pc.src))} → ${esc(cityName(pc.dst))}</h2><span>цены на ${hhmm(S.scan.time)}</span></div>
+    <div class="kpis">
+      <div class="kpi main"><span>Прибыль с рейса</span><b>+${fmtShort(t.exp)}</b><small title="Поправка на устаревшие цены −${adj}%">по базе ${fmtShort(t.profit)}</small></div>
+      <div class="kpi"><span>Вложить</span><b>${fmtShort(t.cost)}</b><small>из ${fmtShort(p.budget)}</small></div>
+      <div class="kpi"><span>Вернётся</span><b>${fmtShort(t.net)}</b></div>
+      <div class="kpi"><span>Доходность</span><b>${roi.toFixed(0)}%</b></div>
+      <div class="kpi"><span>Вес</span><b>${Math.round(t.weight)} кг</b>${isFinite(p.weightCap) ? `<small>из ${Math.round(p.weightCap)}</small>` : ''}</div>
     </div>
-    <div class="risk">
-      <h3>Риск дороги</h3>
-      ${sameCity() ? '<div style="font-size:14px">Чёрный рынок стоит в Каэрлеоне: везти груз через зоны не нужно.</div>'
-      : (() => { const rk = routeRisk(pc.src, pc.dst); return `<div class="riskbig"><b>${String(rk.p).replace('.', ',')}%</b><span>шанс потерять груз за рейс</span></div><p class="imeta" style="margin:6px 0 0">${riskSourceHTML(rk)}</p>
-        ${rk.src === 'manual' ? `<div class="riskctl" style="margin-top:8px"><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}" aria-label="Шанс потерять груз за один рейс"><output id="gankOut" for="gank">${cfg.gank}%</output></div>` : ''}
-        <p class="imeta" style="margin:6px 0 0">Риск учтён в грузе: Караван выбирает вещи так, чтобы рейс окупался даже с учётом потерь.</p>`; })()}
-      <div class="mins"><label for="minutes">Минут на рейс</label><input id="minutes" type="number" min="1" step="1" value="${cfg.minutes}"></div>
-      <div class="riskfacts" id="riskfacts">${riskFactsHTML()}</div>
-    </div>
+    ${sameCity() ? '' : (() => { const rk = routeRisk(pc.src, pc.dst), rm = riskMath(t, rk.p, cfg.minutes); return `<details class="riskline"${S.riskOpen ? ' open' : ''}>
+      <summary><span>Риск <b>${String(rk.p).replace('.', ',')}%</b></span><span>с учётом риска <b class="${rm.ev >= 0 ? 'pos' : 'negc'}">${rm.ev >= 0 ? '+' : '−'}${fmtShort(Math.abs(rm.ev))}</b></span>${rm.perHour != null ? `<span>≈ <b>${fmtShort(rm.perHour)}</b> в час</span>` : ''}</summary>
+      <div class="rbody"><div class="imeta">${riskSourceHTML(rk)}</div>
+        ${rk.src === 'manual' ? `<div class="riskctl"><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}" aria-label="Шанс потерять груз за один рейс"><output id="gankOut" for="gank">${cfg.gank}%</output></div>` : ''}
+        <div class="mins"><label for="minutes">Минут на рейс</label><input id="minutes" type="number" min="1" step="1" value="${cfg.minutes}"></div>
+        <div class="riskfacts" id="riskfacts">${riskFactsHTML()}</div></div></details>`; })()}
     <div class="list">
       <div class="listhead"><h3>Что купить</h3><span>${nLocked ? 'куплено ' + nLocked + ' из ' + p.rows.length : p.rows.length + ' ' + plural(p.rows.length, 'позиция', 'позиции', 'позиций')}</span></div>
       ${p.rows.map(r => rowHTML(r, pc)).join('')}
@@ -557,6 +552,7 @@ function onJournalClick(e) {
   toast('Рейс удалён', 'Вернуть', () => { const k = LS.get('karavan.journal', []); k.splice(i, 0, gone); LS.set('karavan.journal', k); renderJournal(); });
 }
 function showTab(tab) {
+  CUR = tab; refLabel();
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
   $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta'; $('#tab-profile').hidden = tab !== 'profile';
   $('.how').hidden = tab !== 'run';
@@ -608,3 +604,40 @@ $('#result').addEventListener('input', onResultInput);
 $('#tab-journal').addEventListener('click', onJournalClick);
 $('#modal').addEventListener('click', e => { if (e.target.classList.contains('ovl') || e.target.closest('[data-close]')) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ---------- кнопка «Обновить»: обновляет данные открытой вкладки ---------- */
+var CUR = "home", REF_BUSY = false;
+function refTime() {
+  if (CUR === 'run' || CUR === 'home') return S.scan && S.scan.time;
+  if (CUR === 'craft') return typeof CF !== 'undefined' && CF.scan && CF.scan.time;
+  if (CUR === 'farm') return FM.scan && FM.scan.time;
+  if (CUR === 'meta') return MT.data && MT.data.time;
+  if (CUR === 'profile') return Math.min(...[typeof CF !== 'undefined' && CF.scan && CF.scan.time, FM.scan && FM.scan.time].filter(Boolean)) || 0;
+  return 0;
+}
+function refLabel() {
+  const el = $('#refAge'); if (!el) return;
+  if (REF_BUSY) { el.textContent = 'Обновляю…'; return; }
+  const t = refTime(); if (!t || !isFinite(t)) { el.textContent = 'Обновить'; return; }
+  const m = Math.floor((Date.now() - t) / 60000);
+  const b = $('#refAll'); el.textContent = m < 1 ? 'Обновлено сейчас' : m < 60 ? 'Обновлено ' + m + ' мин назад' : 'Обновлено ' + Math.floor(m / 60) + ' ч назад';
+  if (b) b.title = el.textContent;
+}
+async function refreshCurrent() {
+  if (REF_BUSY) return;
+  const b = $('#refAll'); REF_BUSY = true; b.classList.add('busy'); b.disabled = true; refLabel();
+  try {
+    if (CUR === 'run') await scan(false);
+    else if (CUR === 'home') { await Promise.all([S.scan ? scan(false, true) : null, typeof CF !== 'undefined' && CF.scan ? craftScan(false) : null, FM.scan ? farmScan(false) : null].filter(Boolean)); await homeFetch(); renderHome(); }
+    else if (CUR === 'craft') await craftScan(false);
+    else if (CUR === 'farm') await farmScan(false);
+    else if (CUR === 'meta') await metaRefresh();
+    else if (CUR === 'profile') { await Promise.all([craftScan(false), farmScan(false)]); renderProfile(); }
+    else if (CUR === 'group') await gmPoll();
+    else if (CUR === 'maps') { mpStop(); mpStart(); }
+    else if (CUR === 'journal') renderJournal();
+  } catch (e) { }
+  REF_BUSY = false; b.classList.remove('busy'); b.disabled = false; refLabel();
+}
+$('#refAll').addEventListener('click', refreshCurrent);
+setInterval(refLabel, 30000);

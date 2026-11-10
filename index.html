@@ -318,6 +318,45 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 .stepper.sm{grid-template-columns:30px 54px 30px;gap:3px}.stepper.sm button{height:30px;font-size:16px;border-radius:7px}.stepper.sm input{padding:4px;height:30px}
 .stepper.sm.wide{grid-template-columns:30px 84px 30px}
 .pfx{color:var(--amber);font-weight:600;text-align:right}
+
+/* Рейс: настройки сверху, результат на всю ширину */
+.runwrap{display:flex;flex-direction:column;gap:14px}
+.runbar{display:grid;grid-template-columns:1fr;gap:10px 12px;align-items:end}
+.runbar label,.runbar .lbl{display:block;font-size:12px;color:var(--mute);margin-bottom:4px}
+.rb-route{display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);gap:6px;align-items:end}
+.rb-route select{width:100%;min-width:0}
+.rb-go{display:flex;gap:8px}.rb-go .go{flex:1;margin:0}.rb-go .tbtn2{white-space:nowrap}
+.runbar .gocap,.runbar .bar{grid-column:1/-1}.runbar .gocap:empty{display:none}
+.runmore{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:12px}
+.rm-two{display:grid;gap:12px}.rm-sw{display:flex;flex-wrap:wrap;gap:10px 22px}
+.runmore .chipgroup{margin:0}.runmore .adv{margin:0}.runmore .go2{justify-self:start;padding:8px 14px}
+.runbar .seg{display:flex}.runbar .seg button{flex:1;white-space:nowrap}
+@media(min-width:760px){.runbar{grid-template-columns:minmax(300px,1.6fr) minmax(110px,.8fr) minmax(110px,.8fr) auto auto}.rm-two{grid-template-columns:1fr 1fr}}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+@media(min-width:760px){.kpis{grid-template-columns:1.4fr repeat(4,minmax(0,1fr))}}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.kpi span{display:block;font-size:12px;color:var(--mute)}.kpi b{display:block;font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.main b{font-size:26px;color:var(--green)}.kpi small{display:block;font-size:11px;color:var(--mute);margin-top:2px}
+.riskline{border:1px solid var(--line);border-radius:10px;margin-bottom:12px}
+.riskline>summary{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none;font-size:14px}
+.riskline>summary::-webkit-details-marker{display:none}.riskline>summary::after{content:'Подробнее';margin-left:auto;font-size:12px;color:var(--mute)}
+.riskline[open]>summary::after{content:'Скрыть'}
+.riskline .rbody{padding:0 12px 12px;font-size:13px;display:grid;gap:8px}
+.riskline .riskfacts{display:grid;gap:4px}
+.irow.min{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.irow.min .iname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow.min .imeta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow.min .iprofit{text-align:right;min-width:72px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.refbtn{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);color:var(--bone);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+.refbtn:hover{border-color:var(--amber);color:var(--amber)}.refbtn svg{width:15px;height:15px}.refbtn.busy svg{animation:spin 1s linear infinite}.refbtn:disabled{opacity:.6}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(min-width:900px){.side .brand{flex-direction:column;align-items:flex-start}.refbtn{width:100%;justify-content:center}}
+.irow.min .imain{display:block;text-align:left;min-width:0}
+@media(min-width:760px){.runbar{grid-template-columns:minmax(340px,2fr) minmax(110px,.8fr) minmax(110px,.8fr) auto auto}}
+@media(max-width:759px){.kpi.main{grid-column:1/-1}}
+.rb-go .go{white-space:nowrap;padding:10px 16px}
+@media(max-width:899px){.refbtn span{display:none}.refbtn{padding:8px}}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -326,7 +365,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 <body>
 <div class="wrap">
   <aside class="side">
-    <div class="brand"><h1>Караван</h1></div>
+    <div class="brand"><h1>Караван</h1><button type="button" id="refAll" class="refbtn" title="Обновить данные на этой вкладке"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span id="refAge">Обновить</span></button></div>
     <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="profile" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Профиль</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
     <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
@@ -335,68 +374,51 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
   </aside>
   <div class="content">
   <main id="tab-home"></main>
-  <main id="tab-run" class="grid" hidden>
-    <section class="setup" aria-label="Условия рейса">
-      <h2>Условия рейса</h2>
-      <div class="fld">
-        <div class="route">
-          <div><label for="src">Купить в</label><select id="src"></select></div>
-          <button class="swap" id="swap" type="button" aria-label="Поменять города местами" title="Поменять местами">⇄</button>
-          <div><label for="dst">Продать в</label><select id="dst"></select></div>
-        </div>
+  <main id="tab-run" class="runwrap" hidden>
+    <section class="setup runbar" aria-label="Условия рейса">
+      <div class="rb-route">
+        <div><label for="src">Купить в</label><select id="src"></select></div>
+        <button class="swap" id="swap" type="button" aria-label="Поменять города местами" title="Поменять местами">⇄</button>
+        <div><label for="dst">Продать в</label><select id="dst"></select></div>
       </div>
-      <div class="two fld">
-        <div>
-          <label for="budget">Серебро на закупку</label>
-          <input id="budget" type="text" inputmode="text" autocomplete="off" placeholder="например 2 млн">
-          <div class="quick" id="budgetQuick">
-            <button type="button" data-v="500000">500к</button><button type="button" data-v="2000000">2 млн</button><button type="button" data-v="10000000">10 млн</button>
-          </div>
-        </div>
-        <div>
-          <label for="weight">Свободный вес, кг</label>
-          <input id="weight" type="number" inputmode="decimal" min="0" step="1" placeholder="без лимита">
-          <div class="hint">Макс. нагрузка минус то, что уже несёшь</div>
-        </div>
-      </div>
-      <div class="rowline">
-        <label class="switch"><input type="checkbox" id="premium"> Премиум-статус</label>
-        <div class="seg" id="mode" role="group" aria-label="Как продавать">
-          <button type="button" data-v="instant" aria-pressed="true">Продать сразу</button>
-          <button type="button" data-v="order" aria-pressed="false">Свой ордер</button>
-        </div>
-      </div>
-      <div class="chipgroup"><span class="lbl">Что возить</span><div class="chips" id="cats"></div></div>
-      <div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
-      <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div>
-
-      <div class="rowline" style="flex-direction:column;align-items:flex-start;gap:10px">
-        <label class="switch"><input type="checkbox" id="auto"> Обновлять цены каждые 5 минут</label>
-        <label class="switch"><input type="checkbox" id="fresh"> Только свежие цены (до 6 часов)</label>
-      </div>
-      <details class="adv">
-        <summary>Тонкая настройка</summary>
-        <div class="advgrid">
-          <div><label for="maxAge">Не брать цены старше, часов</label><input id="maxAge" type="number" min="1" step="1"></div>
-          <div><label for="halfLife">Доверие к цене падает вдвое за, часов</label><input id="halfLife" type="number" min="1" step="1"></div>
-          <div><label for="minRoi">Мин. доходность позиции, %</label><input id="minRoi" type="number" min="0" step="1"></div>
-          <div><label for="maxRoi">Отсекать доходность выше, % (мусорные цены)</label><input id="maxRoi" type="number" min="10" step="10"></div>
-          <div><label for="minPosProfit">Мин. прибыль с позиции, серебро</label><input id="minPosProfit" type="number" min="0" step="500"></div>
-          <div><label for="maxPerPos">Макс. штук одной вещи</label><input id="maxPerPos" type="number" min="1" step="1"></div>
-          <div><label for="share">Брать не больше этой доли дневного объёма, %</label><input id="share" type="number" min="1" max="100" step="1"></div>
-          <div><label for="slip">Каждая следующая штука хуже по цене на, %</label><input id="slip" type="number" min="0" step="0.5"></div>
-          <div><label for="taxPremium">Налог с премиумом, %</label><input id="taxPremium" type="number" min="0" step="0.5"></div>
-          <div><label for="taxFree">Налог без премиума, %</label><input id="taxFree" type="number" min="0" step="0.5"></div>
-          <div><label for="setupFee">Сбор за выставление ордера, %</label><input id="setupFee" type="number" min="0" step="0.5"></div>
-        </div>
-      </details>
-
-      <button class="go" id="go" type="button">Собрать груз</button>
-      <button class="go2" id="cmpgo" type="button">Сравнить все города закупки</button>
+      <div class="rb-f"><label for="budget">Серебро</label><input id="budget" type="text" inputmode="text" autocomplete="off" placeholder="2 млн"></div>
+      <div class="rb-f rb-w"><label for="weight">Вес, кг</label><input id="weight" type="number" inputmode="decimal" min="0" step="1" placeholder="без лимита"></div>
+      <div class="rb-f"><span class="lbl">Продажа</span><div class="seg" id="mode" role="group" aria-label="Как продавать">
+        <button type="button" data-v="instant" aria-pressed="true">Сразу</button>
+        <button type="button" data-v="order" aria-pressed="false">Ордером</button>
+      </div></div>
+      <div class="rb-go"><button class="go" id="go" type="button">Собрать груз</button><button type="button" class="tbtn2" id="moreBtn" aria-expanded="false" aria-controls="runmore">Настройки</button></div>
       <div class="gocap" id="gocap"></div>
       <div class="bar" id="bar" hidden><i></i></div>
+      <div id="runmore" class="runmore" hidden>
+        <div class="quick" id="budgetQuick" hidden><button type="button" data-v="2000000">2 млн</button></div>
+        <div class="chipgroup"><span class="lbl">Что возить</span><div class="chips" id="cats"></div></div>
+        <div class="rm-two"><div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
+        <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div></div>
+        <div class="rm-sw">
+          <label class="switch"><input type="checkbox" id="premium"> Премиум</label>
+          <label class="switch"><input type="checkbox" id="fresh"> Только цены до 6 ч</label>
+          <label class="switch"><input type="checkbox" id="auto"> Обновлять каждые 5 мин</label>
+        </div>
+        <details class="adv">
+          <summary>Точные настройки</summary>
+          <div class="advgrid">
+            <div><label for="maxAge">Не брать цены старше, ч</label><input id="maxAge" type="number" min="1" step="1"></div>
+            <div><label for="halfLife">Доверие к цене падает вдвое за, ч</label><input id="halfLife" type="number" min="1" step="1"></div>
+            <div><label for="minRoi">Мин. доходность, %</label><input id="minRoi" type="number" min="0" step="1"></div>
+            <div><label for="maxRoi">Отсекать доходность выше, %</label><input id="maxRoi" type="number" min="10" step="10"></div>
+            <div><label for="minPosProfit">Мин. прибыль с позиции</label><input id="minPosProfit" type="number" min="0" step="500"></div>
+            <div><label for="maxPerPos">Макс. штук одной вещи</label><input id="maxPerPos" type="number" min="1" step="1"></div>
+            <div><label for="share">Доля дневного объёма, %</label><input id="share" type="number" min="1" max="100" step="1"></div>
+            <div><label for="slip">Ухудшение цены за штуку, %</label><input id="slip" type="number" min="0" step="0.5"></div>
+            <div><label for="taxPremium">Налог с премиумом, %</label><input id="taxPremium" type="number" min="0" step="0.5"></div>
+            <div><label for="taxFree">Налог без премиума, %</label><input id="taxFree" type="number" min="0" step="0.5"></div>
+            <div><label for="setupFee">Сбор за ордер, %</label><input id="setupFee" type="number" min="0" step="0.5"></div>
+          </div>
+        </details>
+        <button class="go2" id="cmpgo" type="button">Сравнить все города закупки</button>
+      </div>
     </section>
-
     <section id="result" aria-live="polite"></section>
   </main>
 
@@ -413,7 +435,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
     <p>Караван берёт самую дешёвую цену продажи в городе закупки и лучшую цену в городе сбыта, вычитает налог и собирает набор позиций, который даёт максимум прибыли и при этом влезает в твоё серебро и вес. Старые цены часто уже неактуальны, поэтому прибыль умножается на доверие: чем старше цена, тем меньше вклад позиции. Количество ограничено долей дневного объёма продаж, чтобы не везти то, что не продать.</p>
     <p>Это оценка, а не гарантия: перед покупкой сверь цену в игре и вычеркни позицию, если она разошлась. Оставшийся груз пересоберётся сам.</p>
   </details>
-  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере. Чтобы цены по нужным тебе вещам были свежими, запусти <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Data Client</a>: он отправляет в базу цены, которые ты открываешь на рынке в игре.</p>
+  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>. Чтобы цены были свежее, запусти <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Data Client</a>. Караван не связан с Sandbox Interactive.</p>
   </div>
 </div>
 <div id="modal"></div>
@@ -727,6 +749,17 @@ const LOC = LANG === 'uk' ? 'uk-UA' : 'ru-RU';
 
 const UK = {
   /* длинные фразы */
+  'Серебро': 'Срібло',
+  'Сверь с окном станции перед крафтом.': 'Звір із вікном станції перед крафтом.', 'С премиумом — 10 000 в день.': 'З преміумом — 10 000 на день.', 'Мастерство — уровень ветки, специализация — уровень предмета, который делаешь чаще всего. «Фокус» — доля от обычного расхода.': 'Майстерність — рівень гілки, спеціалізація — рівень предмета, який робиш найчастіше. «Фокус» — частка від звичайної витрати.',
+  'Чтобы цены были свежее, запусти': 'Щоб ціни були свіжішими, запусти', 'Караван не связан с Sandbox Interactive.': 'Караван не пов’язаний із Sandbox Interactive.', 'Вес, кг': 'Вага, кг',
+  'Обновить данные на этой вкладке': 'Оновити дані на цій вкладці', 'Обновить': 'Оновити', 'Обновляю…': 'Оновлюю…', 'Обновлено сейчас': 'Оновлено щойно', 'Обновлено': 'Оновлено', 'мин назад': 'хв тому', 'ч назад': 'год тому',
+  'Свободный вес, кг': 'Вільна вага, кг', 'Продажа': 'Продаж', 'Сразу': 'Одразу', 'Ордером': 'Ордером', 'Настройки': 'Налаштування', 'Премиум': 'Преміум', 'Только цены до 6 ч': 'Лише ціни до 6 год', 'Обновлять каждые 5 мин': 'Оновлювати кожні 5 хв',
+  'Точные настройки': 'Точні налаштування', 'Не брать цены старше, ч': 'Не брати ціни старші, год', 'Доверие к цене падает вдвое за, ч': 'Довіра до ціни падає вдвічі за, год', 'Мин. доходность, %': 'Мін. дохідність, %', 'Отсекать доходность выше, %': 'Відкидати дохідність вище, %',
+  'Мин. прибыль с позиции': 'Мін. прибуток з позиції', 'Доля дневного объёма, %': 'Частка денного обсягу, %', 'Ухудшение цены за штуку, %': 'Погіршення ціни за штуку, %', 'Сбор за ордер, %': 'Збір за ордер, %',
+  'Прибыль с рейса': 'Прибуток з рейсу', 'по базе': 'за базою', 'Вложить': 'Вкласти', 'Вернётся': 'Повернеться', 'Доходность': 'Дохідність', 'Вес': 'Вага', 'с учётом риска': 'з урахуванням ризику', 'в час': 'на годину', 'Подробнее': 'Докладніше', 'Скрыть': 'Сховати', 'цены на': 'ціни на',
+  'Не взято из-за риска позиций с малой наценкой:': 'Не взято через ризик позицій з малою націнкою:', 'В среднем с учётом риска:': 'У середньому з урахуванням ризику:', 'Одна потеря съедает прибыль': 'Одна втрата з’їдає прибуток', 'Рейс выгоден при риске ниже': 'Рейс вигідний при ризику нижче', 'Около': 'Близько',
+  'Рейсов по маршруту в журнале нет, взят обычный риск. Завершай рейсы кнопкой «Завершить рейс», и оценка станет точнее.': 'Рейсів за маршрутом у журналі немає, взято звичайний ризик. Завершуй рейси кнопкою «Завершити рейс», і оцінка стане точнішою.',
+  'Рейсов мало, оценка смешана с обычным риском.': 'Рейсів мало, оцінка змішана зі звичайним ризиком.', 'Для сравнения нужно ещё': 'Для порівняння потрібно ще', 'в этот час': 'у цю годину', 'Цены записаны': 'Ціни записані',
   'Только сеты с точной ценой': 'Лише сети з точною ціною', 'Любой, где дешевле': 'Будь-яке, де дешевше', 'где дешевле': 'де дешевше', 'Где брать:': 'Де брати:',
   'Цену показываю, только если каждая вещь сета видна на рынке не дольше 24 часов назад и её цена не выбивается из других городов больше чем вдвое. Иначе ставлю «?».': 'Ціну показую, лише якщо кожну річ сету бачили на ринку не раніше ніж 24 години тому і її ціна не відрізняється від інших міст більш ніж удвічі. Інакше ставлю «?».',
   'не уверен в цене': 'не впевнений у ціні', 'считаю…': 'рахую…', 'не уверен:': 'не впевнений:', 'вдвое дороже, чем в других городах': 'удвічі дорожче, ніж в інших містах', 'нет свежих лотов': 'немає свіжих лотів',
@@ -1383,6 +1416,8 @@ function initForm() {
   $('#auto').addEventListener('change', e => { cfg.auto = e.target.checked; saveCfg(); if (cfg.auto) toast('Цены обновятся сами, пока окно открыто.'); autoTick(); });
   $('#fresh').addEventListener('change', e => { cfg.fresh = e.target.checked; cfg.maxAge = cfg.fresh ? 6 : 24; $('#maxAge').value = cfg.maxAge; saveCfg(); recalc(); if ($('#tab-craft') && !$('#tab-craft').hidden && typeof craftRecalc === 'function') craftRecalc(); if (typeof renderFarm === 'function') renderFarm(); });
   $('#go').addEventListener('click', () => { S.lastCompare = false; scan(false); });
+  $('#result').addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('riskline')) S.riskOpen = e.target.open; }, true);
+  $('#moreBtn').addEventListener('click', () => { const m = $('#runmore'), b = $('#moreBtn'); m.hidden = !m.hidden; b.setAttribute('aria-expanded', String(!m.hidden)); });
   $('#cmpgo').addEventListener('click', () => { S.lastCompare = true; compareCities(false); });
   document.querySelector('.tabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) showTab(t.dataset.tab); });
   updateGo();
@@ -1618,15 +1653,14 @@ function detailHTML(r, pc) {
 }
 function rowHTML(r, pc) {
   const c = r.cand, it = c.item, open = S.open === r.key;
-  const dot = c.conf >= 0.55 ? 'g' : c.conf >= 0.25 ? 'a' : 'r';
+  const dot = c.conf >= 0.55 ? 'g' : c.conf >= 0.25 ? 'a' : 'r', ages = 'Цены записаны ' + fmtAge(c.ageB) + ' и ' + fmtAge(c.ageS) + ' назад';
   return `<div class="item${r.locked ? ' done' : ''}" data-key="${esc(r.key)}">
-    <div class="irow">
+    <div class="irow min">
       <input type="checkbox" class="chk" data-act="lock" ${r.locked ? 'checked' : ''} aria-label="Куплено: ${esc(it.name)} ${tierLabel(it)}">
       <span class="ic">${tierLabel(it)}<img loading="lazy" alt="" src="https://render.albiononline.com/v1/item/${c.id}.png?size=64&amp;quality=${c.qb}" onerror="this.remove()"></span>
-      <button type="button" class="imain" data-act="open" aria-haspopup="dialog">
+      <button type="button" class="imain" data-act="open" aria-haspopup="dialog" title="${esc(ages)}">
         <div class="iname">${esc(it.name)}</div>
-        <div class="imeta"><b>${tierLabel(it)}</b>${it.gear ? ', ' + QN[c.qb].toLowerCase() : ''}, <b>${fmt(r.qty)} шт.</b> по ${fmt(r.cost / r.qty)}</div>
-        <div class="imeta"><span class="dot ${dot}"></span>цены ${fmtAge(c.ageB)} и ${fmtAge(c.ageS)} назад</div>
+        <div class="imeta"><span class="dot ${dot}" aria-label="${esc(ages)}"></span>${tierLabel(it)} · ${fmt(r.qty)} шт.</div>
       </button>
       <div class="iprofit"><b>+${fmtShort(r.profit)}</b><span>${fmtShort(r.cost)}</span></div>
     </div>${r.locked && open ? detailHTML(r, pc) : ''}
@@ -1636,24 +1670,22 @@ function riskFactsHTML() {
   const rk = routeRisk(planCfg().src, planCfg().dst), t = S.plan.totals, rm = riskMath(t, rk.p, cfg.minutes), out = [];
   if (rk.p > 0 && S.cands.length) {
     const p = rk.p / 100, cut = S.cands.filter(c => c.profit * c.conf >= cfg.minPosProfit && c.profit * c.conf * (1 - p) - p * c.buy <= 0).length;
-    if (cut) out.push(`<div>Из-за риска не взято позиций с маленькой наценкой: <b>${cut}</b>. Если груз отнимут, они бы не окупились.</div>`);
+    if (cut) out.push(`<div>Не взято из-за риска позиций с малой наценкой: <b>${cut}</b></div>`);
   }
   if (!sameCity()) {
-    out.push(`<div>С учётом риска рейс в среднем даёт <b class="${rm.ev >= 0 ? 'pos' : 'negc'}">${rm.ev >= 0 ? '+' : '−'}${fmt(Math.abs(rm.ev))}</b></div>`);
-    out.push(`<div>Один потерянный груз съедает прибыль <b>${isFinite(rm.runsPerGank) ? Math.ceil(rm.runsPerGank) : '—'}</b> удачных рейсов</div>`);
-    out.push(`<div>Рейс выгоден, пока шанс потери ниже <b>${rm.breakEven.toFixed(0)}%</b></div>`);
+    out.push(`<div>Одна потеря съедает прибыль <b>${isFinite(rm.runsPerGank) ? Math.ceil(rm.runsPerGank) : '—'}</b> рейсов</div>`);
+    out.push(`<div>Рейс выгоден при риске ниже <b>${rm.breakEven.toFixed(0)}%</b></div>`);
   }
-  if (rm.perHour != null) out.push(`<div>Это около <b>${fmtShort(rm.perHour)}</b> серебра в час</div>`);
   return out.join('');
 }
 function updateRisk() { const el = $('#riskfacts'); if (el && S.plan) el.innerHTML = riskFactsHTML(); const o = $('#gankOut'); if (o) o.textContent = cfg.gank + '%'; }
 function riskSourceHTML(rk) {
   if (rk.src === 'manual') return `Ты задал шанс вручную. <button type="button" class="linkbtn" data-act="riskauto">Считать по журналу</button>`;
-  const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов пока мало, поэтому оценка смешана с обычным риском маршрута.' : ''}`
-    : 'Рейсов по этому маршруту в журнале ещё нет, поэтому взят обычный риск маршрута. Завершай рейсы через «Завершить рейс», и оценка станет твоей.';
+  const base = rk.src === 'journal' ? `По твоему журналу: на этом маршруте ${rk.n} ${plural(rk.n, 'рейс', 'рейса', 'рейсов')}, груз потерян ${rk.lost} ${plural(rk.lost, 'раз', 'раза', 'раз')}.${rk.n < 10 ? ' Рейсов мало, оценка смешана с обычным риском.' : ''}`
+    : 'Рейсов по маршруту в журнале нет, взят обычный риск. Завершай рейсы кнопкой «Завершить рейс», и оценка станет точнее.';
   const a = rk.act;
   const actTxt = !a ? ' Активность сервера ещё не замерена.'
-    : ` Сейчас на сервере ${a.rate.toFixed(1).replace('.', ',')} убийств в минуту${a.base ? `, это в ${a.factor.toFixed(1).replace('.', ',')} раза ${a.factor >= 1 ? 'больше' : 'меньше'} обычного для этого часа, поэтому риск ${a.factor >= 1 ? 'повышен' : 'снижен'} с ${String(rk.base).replace('.', ',')}%` : `. Для сравнения с обычным уровнем нужно ещё ${3 - a.samples} ${plural(3 - a.samples, 'замер', 'замера', 'замеров')} в этот же час в другие дни`}${a.prime ? '. Похоже на прайм-тайм' : ''}.`;
+    : ` Сейчас на сервере ${a.rate.toFixed(1).replace('.', ',')} убийств в минуту${a.base ? `, это в ${a.factor.toFixed(1).replace('.', ',')} раза ${a.factor >= 1 ? 'больше' : 'меньше'} обычного для этого часа, поэтому риск ${a.factor >= 1 ? 'повышен' : 'снижен'} с ${String(rk.base).replace('.', ',')}%` : `. Для сравнения нужно ещё ${3 - a.samples} ${plural(3 - a.samples, 'замер', 'замера', 'замеров')} в этот час`}${a.prime ? '. Похоже на прайм-тайм' : ''}.`;
   return base + actTxt + ` <button type="button" class="linkbtn" data-act="riskmanual">Задать вручную</button>`;
 }
 
@@ -1675,24 +1707,20 @@ function renderResult() {
   const roi = t.cost > 0 ? (t.profit / t.cost * 100) : 0;
   const nLocked = p.rows.filter(r => r.locked).length;
   h += `<div class="sheet">
-    <div class="sheethead"><h2>Накладная</h2><span>${esc(cityName(pc.src))} → ${esc(cityName(pc.dst))}, цены загружены в ${hhmm(S.scan.time)}</span></div>
-    <div class="sum">
-      <div class="big"><span>Ожидаемая прибыль с рейса</span><b>${fmt(t.exp)}</b><small>По ценам из базы ${fmt(t.profit)}. Поправка на устаревшие цены: −${adj}%</small></div>
-      <div>
-        <dl class="kv"><div><dt>Вложить</dt><dd>${fmtShort(t.cost)}</dd></div><div><dt>Вернётся</dt><dd>${fmtShort(t.net)}</dd></div><div><dt>Доходность</dt><dd>${roi.toFixed(0)}%</dd></div></dl>
-        ${gaugeHTML('Серебро', { raw: t.cost, txt: fmtShort(t.cost), capTxt: fmtShort(p.budget) }, p.budget, '')}
-        ${isFinite(p.weightCap) ? gaugeHTML('Вес', { raw: t.weight, txt: Math.round(t.weight), capTxt: Math.round(p.weightCap) }, p.weightCap, 'кг') : gaugeHTML('Вес', Math.round(t.weight), Infinity, 'кг')}
-      </div>
+    <div class="sheethead"><h2>${esc(cityName(pc.src))} → ${esc(cityName(pc.dst))}</h2><span>цены на ${hhmm(S.scan.time)}</span></div>
+    <div class="kpis">
+      <div class="kpi main"><span>Прибыль с рейса</span><b>+${fmtShort(t.exp)}</b><small title="Поправка на устаревшие цены −${adj}%">по базе ${fmtShort(t.profit)}</small></div>
+      <div class="kpi"><span>Вложить</span><b>${fmtShort(t.cost)}</b><small>из ${fmtShort(p.budget)}</small></div>
+      <div class="kpi"><span>Вернётся</span><b>${fmtShort(t.net)}</b></div>
+      <div class="kpi"><span>Доходность</span><b>${roi.toFixed(0)}%</b></div>
+      <div class="kpi"><span>Вес</span><b>${Math.round(t.weight)} кг</b>${isFinite(p.weightCap) ? `<small>из ${Math.round(p.weightCap)}</small>` : ''}</div>
     </div>
-    <div class="risk">
-      <h3>Риск дороги</h3>
-      ${sameCity() ? '<div style="font-size:14px">Чёрный рынок стоит в Каэрлеоне: везти груз через зоны не нужно.</div>'
-      : (() => { const rk = routeRisk(pc.src, pc.dst); return `<div class="riskbig"><b>${String(rk.p).replace('.', ',')}%</b><span>шанс потерять груз за рейс</span></div><p class="imeta" style="margin:6px 0 0">${riskSourceHTML(rk)}</p>
-        ${rk.src === 'manual' ? `<div class="riskctl" style="margin-top:8px"><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}" aria-label="Шанс потерять груз за один рейс"><output id="gankOut" for="gank">${cfg.gank}%</output></div>` : ''}
-        <p class="imeta" style="margin:6px 0 0">Риск учтён в грузе: Караван выбирает вещи так, чтобы рейс окупался даже с учётом потерь.</p>`; })()}
-      <div class="mins"><label for="minutes">Минут на рейс</label><input id="minutes" type="number" min="1" step="1" value="${cfg.minutes}"></div>
-      <div class="riskfacts" id="riskfacts">${riskFactsHTML()}</div>
-    </div>
+    ${sameCity() ? '' : (() => { const rk = routeRisk(pc.src, pc.dst), rm = riskMath(t, rk.p, cfg.minutes); return `<details class="riskline"${S.riskOpen ? ' open' : ''}>
+      <summary><span>Риск <b>${String(rk.p).replace('.', ',')}%</b></span><span>с учётом риска <b class="${rm.ev >= 0 ? 'pos' : 'negc'}">${rm.ev >= 0 ? '+' : '−'}${fmtShort(Math.abs(rm.ev))}</b></span>${rm.perHour != null ? `<span>≈ <b>${fmtShort(rm.perHour)}</b> в час</span>` : ''}</summary>
+      <div class="rbody"><div class="imeta">${riskSourceHTML(rk)}</div>
+        ${rk.src === 'manual' ? `<div class="riskctl"><input id="gank" type="range" min="0" max="40" step="1" value="${cfg.gank}" aria-label="Шанс потерять груз за один рейс"><output id="gankOut" for="gank">${cfg.gank}%</output></div>` : ''}
+        <div class="mins"><label for="minutes">Минут на рейс</label><input id="minutes" type="number" min="1" step="1" value="${cfg.minutes}"></div>
+        <div class="riskfacts" id="riskfacts">${riskFactsHTML()}</div></div></details>`; })()}
     <div class="list">
       <div class="listhead"><h3>Что купить</h3><span>${nLocked ? 'куплено ' + nLocked + ' из ' + p.rows.length : p.rows.length + ' ' + plural(p.rows.length, 'позиция', 'позиции', 'позиций')}</span></div>
       ${p.rows.map(r => rowHTML(r, pc)).join('')}
@@ -1859,6 +1887,7 @@ function onJournalClick(e) {
   toast('Рейс удалён', 'Вернуть', () => { const k = LS.get('karavan.journal', []); k.splice(i, 0, gone); LS.set('karavan.journal', k); renderJournal(); });
 }
 function showTab(tab) {
+  CUR = tab; refLabel();
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
   $('#tab-home').hidden = tab !== 'home'; $('#tab-run').hidden = tab !== 'run'; $('#tab-journal').hidden = tab !== 'journal'; $('#tab-craft').hidden = tab !== 'craft'; $('#tab-farm').hidden = tab !== 'farm'; $('#tab-group').hidden = tab !== 'group'; $('#tab-maps').hidden = tab !== 'maps'; $('#tab-meta').hidden = tab !== 'meta'; $('#tab-profile').hidden = tab !== 'profile';
   $('.how').hidden = tab !== 'run';
@@ -1910,6 +1939,43 @@ $('#result').addEventListener('input', onResultInput);
 $('#tab-journal').addEventListener('click', onJournalClick);
 $('#modal').addEventListener('click', e => { if (e.target.classList.contains('ovl') || e.target.closest('[data-close]')) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ---------- кнопка «Обновить»: обновляет данные открытой вкладки ---------- */
+var CUR = "home", REF_BUSY = false;
+function refTime() {
+  if (CUR === 'run' || CUR === 'home') return S.scan && S.scan.time;
+  if (CUR === 'craft') return typeof CF !== 'undefined' && CF.scan && CF.scan.time;
+  if (CUR === 'farm') return FM.scan && FM.scan.time;
+  if (CUR === 'meta') return MT.data && MT.data.time;
+  if (CUR === 'profile') return Math.min(...[typeof CF !== 'undefined' && CF.scan && CF.scan.time, FM.scan && FM.scan.time].filter(Boolean)) || 0;
+  return 0;
+}
+function refLabel() {
+  const el = $('#refAge'); if (!el) return;
+  if (REF_BUSY) { el.textContent = 'Обновляю…'; return; }
+  const t = refTime(); if (!t || !isFinite(t)) { el.textContent = 'Обновить'; return; }
+  const m = Math.floor((Date.now() - t) / 60000);
+  const b = $('#refAll'); el.textContent = m < 1 ? 'Обновлено сейчас' : m < 60 ? 'Обновлено ' + m + ' мин назад' : 'Обновлено ' + Math.floor(m / 60) + ' ч назад';
+  if (b) b.title = el.textContent;
+}
+async function refreshCurrent() {
+  if (REF_BUSY) return;
+  const b = $('#refAll'); REF_BUSY = true; b.classList.add('busy'); b.disabled = true; refLabel();
+  try {
+    if (CUR === 'run') await scan(false);
+    else if (CUR === 'home') { await Promise.all([S.scan ? scan(false, true) : null, typeof CF !== 'undefined' && CF.scan ? craftScan(false) : null, FM.scan ? farmScan(false) : null].filter(Boolean)); await homeFetch(); renderHome(); }
+    else if (CUR === 'craft') await craftScan(false);
+    else if (CUR === 'farm') await farmScan(false);
+    else if (CUR === 'meta') await metaRefresh();
+    else if (CUR === 'profile') { await Promise.all([craftScan(false), farmScan(false)]); renderProfile(); }
+    else if (CUR === 'group') await gmPoll();
+    else if (CUR === 'maps') { mpStop(); mpStart(); }
+    else if (CUR === 'journal') renderJournal();
+  } catch (e) { }
+  REF_BUSY = false; b.classList.remove('busy'); b.disabled = false; refLabel();
+}
+$('#refAll').addEventListener('click', refreshCurrent);
+setInterval(refLabel, 30000);
 
 </script>
 <script>
@@ -2094,7 +2160,7 @@ function craftSetupHTML() {
     <details class="adv" style="margin-bottom:12px"><summary>Шансы качества при крафте</summary>
       <div class="advgrid" style="grid-template-columns:repeat(5,1fr)">${QN.slice(1).map((n, i) => `<div><label for="cQ${i}" style="min-height:2.6em">${n}, %</label><input id="cQ${i}" data-q="${i}" type="number" min="0" step="0.01" value="${(c.qp || QDEF)[i]}"></div>`).join('')}</div>
       <div class="hint">Примерные шансы без бонусов. Специализация и еда на качество повышают шанс высоких качеств — поправь под себя. Сумма не обязана быть 100, Караван сам приведёт к долям.</div></details>
-    <div class="fld"><label for="cFee">Плата станции за одну вещь, серебро</label><input id="cFee" type="number" min="0" step="100" value="${c.fee}"><div class="hint">Посмотри в окне станции перед крафтом. Налог с продажи и премиум берутся из вкладки «Рейс».</div></div>
+    <div class="fld"><label for="cFee">Плата станции за одну вещь, серебро</label><input id="cFee" type="number" min="0" step="100" value="${c.fee}"><div class="hint">Сверь с окном станции перед крафтом.</div></div>
     <button class="go" type="button" data-c="scan" ${CF.busy || !items.length ? 'disabled' : ''}>${CF.busy ? 'Проверяю цены…' : CF.scan ? 'Обновить цены' : 'Найти выгодный крафт'}</button>
     <div class="gocap">${items.length ? fmt(items.length) + ' рецептов' : 'Под эти фильтры рецептов нет'}</div>
     <div class="bar" id="cbar" hidden><i></i></div></section>`;
@@ -2303,7 +2369,7 @@ function farmSetupHTML() {
     <div class="two fld">${num('fFarm', 'Полей', c.farm, 0, 30)}${num('fHerb', 'Садов трав', c.herb, 0, 30)}</div>
     <div class="two fld">${num('fPasture', 'Пастбищ', c.pasture, 0, 30)}${num('fKennel', 'Питомников', c.kennel, 0, 30)}</div>
     <div class="two fld">${num('fSlots', 'Мест на одном участке', c.slots, 1, 20)}${num('fMult', 'Множитель урожая', c.mult, 0.1, 5, 0.1)}</div>
-    <div class="hint" style="margin-top:-6px;margin-bottom:12px">Без премиума урожай и продукты животных считаются вдвое меньше, а налог с продажи выше. Если в игре цифры другие, поправь множитель.</div>
+    
     <span class="lbl">Сколько участков поливать или кормить с фокусом</span>
     <div class="two fld">${num('fwFarm', 'Полей с фокусом', Math.min(c.wFarm || 0, c.farm), 0, c.farm)}${num('fwHerb', 'Садов с фокусом', Math.min(c.wHerb || 0, c.herb), 0, c.herb)}</div>
     <div class="two fld">${num('fwPasture', 'Пастбищ с фокусом', Math.min(c.wPasture || 0, c.pasture), 0, c.pasture)}${num('fwKennel', 'Питомников с фокусом', Math.min(c.wKennel || 0, c.kennel), 0, c.kennel)}</div>
@@ -2313,9 +2379,9 @@ function farmSetupHTML() {
 
       <label class="switch"><input type="checkbox" id="fOwn" ${c.ownFood ? 'checked' : ''}> Кормить своим урожаем</label>
       <label class="switch"><input type="checkbox" id="fBuyO" ${c.buyOrder ? 'checked' : ''}> Покупать семена и детёнышей через свой ордер</label></div>
-    <div class="hint" style="margin-top:-4px;margin-bottom:12px">Свой урожай считается по цене, за которую ты бы его продал, а не купил. Свой ордер на покупку обычно дешевле, но ждать приходится дольше.</div>
+    
     <button class="go" type="button" data-f="scan" ${FM.busy ? 'disabled' : ''}>${FM.busy ? 'Проверяю цены…' : FM.scan ? 'Обновить цены' : 'Посчитать остров'}</button>
-    <div class="gocap">Налог и премиум берутся из вкладки «Рейс»</div></section>`;
+    </section>`;
 }
 function farmResultHTML() {
   let h = '';
@@ -2843,8 +2909,8 @@ function renderProfile() {
   if (!FM.scan) need.push('<button type="button" class="tbtn2" data-pp="farm">Посчитать остров</button>');
   el.innerHTML = `<section class="setup"><h2>Профиль</h2>
     <label class="switch" style="margin-bottom:12px"><input type="checkbox" id="pPrem" ${cfg.premium ? 'checked' : ''}> Премиум-статус</label>
-    <div class="fld"><label>Фокуса в день</label>${step('pFocus', c.focusDay, 60000, 1000, 1)}<div class="hint">С премиумом дают 10 000 в день. Если копил, укажи, сколько есть сейчас.</div></div>
-    <div class="hint" style="margin-bottom:8px">Мастерство — уровень общей ветки (например, «Огородник» или «Кузнец»), специализация — уровень на то, что делаешь чаще всего. В последнем столбце — сколько фокуса уходит от обычного.</div>
+    <div class="fld"><label>Фокуса в день</label>${step('pFocus', c.focusDay, 60000, 1000, 1)}<div class="hint">С премиумом — 10 000 в день.</div></div>
+    <div class="hint" style="margin-bottom:8px">Мастерство — уровень ветки, специализация — уровень предмета, который делаешь чаще всего. «Фокус» — доля от обычного расхода.</div>
     <div class="pftable"><table><thead><tr><th>Ветка</th><th>Мастерство</th><th>Специализация</th><th>Фокус</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="imeta" style="margin-top:8px">Формула из открытых калькуляторов: расход = базовый × 0,5^(эффективность / 10 000), эффективность = мастерство × 30 + специализация × 250.</p></section>
     <section aria-live="off"><div class="sheet"><div class="sheethead"><h2>Куда лить фокус сегодня</h2><span>${fmt(c.focusDay)} очков</span></div>

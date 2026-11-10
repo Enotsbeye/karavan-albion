@@ -318,6 +318,45 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 .stepper.sm{grid-template-columns:30px 54px 30px;gap:3px}.stepper.sm button{height:30px;font-size:16px;border-radius:7px}.stepper.sm input{padding:4px;height:30px}
 .stepper.sm.wide{grid-template-columns:30px 84px 30px}
 .pfx{color:var(--amber);font-weight:600;text-align:right}
+
+/* Рейс: настройки сверху, результат на всю ширину */
+.runwrap{display:flex;flex-direction:column;gap:14px}
+.runbar{display:grid;grid-template-columns:1fr;gap:10px 12px;align-items:end}
+.runbar label,.runbar .lbl{display:block;font-size:12px;color:var(--mute);margin-bottom:4px}
+.rb-route{display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);gap:6px;align-items:end}
+.rb-route select{width:100%;min-width:0}
+.rb-go{display:flex;gap:8px}.rb-go .go{flex:1;margin:0}.rb-go .tbtn2{white-space:nowrap}
+.runbar .gocap,.runbar .bar{grid-column:1/-1}.runbar .gocap:empty{display:none}
+.runmore{grid-column:1/-1;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:12px}
+.rm-two{display:grid;gap:12px}.rm-sw{display:flex;flex-wrap:wrap;gap:10px 22px}
+.runmore .chipgroup{margin:0}.runmore .adv{margin:0}.runmore .go2{justify-self:start;padding:8px 14px}
+.runbar .seg{display:flex}.runbar .seg button{flex:1;white-space:nowrap}
+@media(min-width:760px){.runbar{grid-template-columns:minmax(300px,1.6fr) minmax(110px,.8fr) minmax(110px,.8fr) auto auto}.rm-two{grid-template-columns:1fr 1fr}}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+@media(min-width:760px){.kpis{grid-template-columns:1.4fr repeat(4,minmax(0,1fr))}}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.kpi span{display:block;font-size:12px;color:var(--mute)}.kpi b{display:block;font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.main b{font-size:26px;color:var(--green)}.kpi small{display:block;font-size:11px;color:var(--mute);margin-top:2px}
+.riskline{border:1px solid var(--line);border-radius:10px;margin-bottom:12px}
+.riskline>summary{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none;font-size:14px}
+.riskline>summary::-webkit-details-marker{display:none}.riskline>summary::after{content:'Подробнее';margin-left:auto;font-size:12px;color:var(--mute)}
+.riskline[open]>summary::after{content:'Скрыть'}
+.riskline .rbody{padding:0 12px 12px;font-size:13px;display:grid;gap:8px}
+.riskline .riskfacts{display:grid;gap:4px}
+.irow.min{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.irow.min .iname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow.min .imeta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.irow.min .iprofit{text-align:right;min-width:72px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.refbtn{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);color:var(--bone);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+.refbtn:hover{border-color:var(--amber);color:var(--amber)}.refbtn svg{width:15px;height:15px}.refbtn.busy svg{animation:spin 1s linear infinite}.refbtn:disabled{opacity:.6}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(min-width:900px){.side .brand{flex-direction:column;align-items:flex-start}.refbtn{width:100%;justify-content:center}}
+.irow.min .imain{display:block;text-align:left;min-width:0}
+@media(min-width:760px){.runbar{grid-template-columns:minmax(340px,2fr) minmax(110px,.8fr) minmax(110px,.8fr) auto auto}}
+@media(max-width:759px){.kpi.main{grid-column:1/-1}}
+.rb-go .go{white-space:nowrap;padding:10px 16px}
+@media(max-width:899px){.refbtn span{display:none}.refbtn{padding:8px}}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.brand h1{font-size:29px}.big b{font-size:37px}.kv{grid-template-columns:repeat(3,1fr);gap:4px 8px}.irow{gap:8px}.ic{width:40px;height:40px}}
@@ -326,7 +365,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
 <body>
 <div class="wrap">
   <aside class="side">
-    <div class="brand"><h1>Караван</h1></div>
+    <div class="brand"><h1>Караван</h1><button type="button" id="refAll" class="refbtn" title="Обновить данные на этой вкладке"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg><span id="refAge">Обновить</span></button></div>
     <nav class="tabs" role="tablist" aria-label="Разделы"><button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Сводка</span></button><button role="tab" data-tab="run" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h11v9H3zM14 9h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg><span>Рейс</span></button><button role="tab" data-tab="craft" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4l6 6-3 3-6-6zM11 7l-7 7 3 3 7-7"/></svg><span>Крафт</span></button><button role="tab" data-tab="farm" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l7-7"/></svg><span>Остров</span></button><button role="tab" data-tab="group" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 15c2.5 0 4.5 2 4.5 5"/></svg><span>Группа</span></button><button role="tab" data-tab="maps" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4l6 2 6-2v14l-6 2-6-2-6 2V6zM9 4v14M15 6v14"/></svg><span>Карты</span></button><button role="tab" data-tab="meta" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><span>Мета</span></button><button role="tab" data-tab="profile" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Профиль</span></button><button role="tab" data-tab="journal" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM9 8h6M9 12h6"/></svg><span>Журнал</span></button></nav>
     <div class="sidectl">
       <select id="server" aria-label="Сервер"></select>
@@ -335,68 +374,51 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
   </aside>
   <div class="content">
   <main id="tab-home"></main>
-  <main id="tab-run" class="grid" hidden>
-    <section class="setup" aria-label="Условия рейса">
-      <h2>Условия рейса</h2>
-      <div class="fld">
-        <div class="route">
-          <div><label for="src">Купить в</label><select id="src"></select></div>
-          <button class="swap" id="swap" type="button" aria-label="Поменять города местами" title="Поменять местами">⇄</button>
-          <div><label for="dst">Продать в</label><select id="dst"></select></div>
-        </div>
+  <main id="tab-run" class="runwrap" hidden>
+    <section class="setup runbar" aria-label="Условия рейса">
+      <div class="rb-route">
+        <div><label for="src">Купить в</label><select id="src"></select></div>
+        <button class="swap" id="swap" type="button" aria-label="Поменять города местами" title="Поменять местами">⇄</button>
+        <div><label for="dst">Продать в</label><select id="dst"></select></div>
       </div>
-      <div class="two fld">
-        <div>
-          <label for="budget">Серебро на закупку</label>
-          <input id="budget" type="text" inputmode="text" autocomplete="off" placeholder="например 2 млн">
-          <div class="quick" id="budgetQuick">
-            <button type="button" data-v="500000">500к</button><button type="button" data-v="2000000">2 млн</button><button type="button" data-v="10000000">10 млн</button>
-          </div>
-        </div>
-        <div>
-          <label for="weight">Свободный вес, кг</label>
-          <input id="weight" type="number" inputmode="decimal" min="0" step="1" placeholder="без лимита">
-          <div class="hint">Макс. нагрузка минус то, что уже несёшь</div>
-        </div>
-      </div>
-      <div class="rowline">
-        <label class="switch"><input type="checkbox" id="premium"> Премиум-статус</label>
-        <div class="seg" id="mode" role="group" aria-label="Как продавать">
-          <button type="button" data-v="instant" aria-pressed="true">Продать сразу</button>
-          <button type="button" data-v="order" aria-pressed="false">Свой ордер</button>
-        </div>
-      </div>
-      <div class="chipgroup"><span class="lbl">Что возить</span><div class="chips" id="cats"></div></div>
-      <div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
-      <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div>
-
-      <div class="rowline" style="flex-direction:column;align-items:flex-start;gap:10px">
-        <label class="switch"><input type="checkbox" id="auto"> Обновлять цены каждые 5 минут</label>
-        <label class="switch"><input type="checkbox" id="fresh"> Только свежие цены (до 6 часов)</label>
-      </div>
-      <details class="adv">
-        <summary>Тонкая настройка</summary>
-        <div class="advgrid">
-          <div><label for="maxAge">Не брать цены старше, часов</label><input id="maxAge" type="number" min="1" step="1"></div>
-          <div><label for="halfLife">Доверие к цене падает вдвое за, часов</label><input id="halfLife" type="number" min="1" step="1"></div>
-          <div><label for="minRoi">Мин. доходность позиции, %</label><input id="minRoi" type="number" min="0" step="1"></div>
-          <div><label for="maxRoi">Отсекать доходность выше, % (мусорные цены)</label><input id="maxRoi" type="number" min="10" step="10"></div>
-          <div><label for="minPosProfit">Мин. прибыль с позиции, серебро</label><input id="minPosProfit" type="number" min="0" step="500"></div>
-          <div><label for="maxPerPos">Макс. штук одной вещи</label><input id="maxPerPos" type="number" min="1" step="1"></div>
-          <div><label for="share">Брать не больше этой доли дневного объёма, %</label><input id="share" type="number" min="1" max="100" step="1"></div>
-          <div><label for="slip">Каждая следующая штука хуже по цене на, %</label><input id="slip" type="number" min="0" step="0.5"></div>
-          <div><label for="taxPremium">Налог с премиумом, %</label><input id="taxPremium" type="number" min="0" step="0.5"></div>
-          <div><label for="taxFree">Налог без премиума, %</label><input id="taxFree" type="number" min="0" step="0.5"></div>
-          <div><label for="setupFee">Сбор за выставление ордера, %</label><input id="setupFee" type="number" min="0" step="0.5"></div>
-        </div>
-      </details>
-
-      <button class="go" id="go" type="button">Собрать груз</button>
-      <button class="go2" id="cmpgo" type="button">Сравнить все города закупки</button>
+      <div class="rb-f"><label for="budget">Серебро</label><input id="budget" type="text" inputmode="text" autocomplete="off" placeholder="2 млн"></div>
+      <div class="rb-f rb-w"><label for="weight">Вес, кг</label><input id="weight" type="number" inputmode="decimal" min="0" step="1" placeholder="без лимита"></div>
+      <div class="rb-f"><span class="lbl">Продажа</span><div class="seg" id="mode" role="group" aria-label="Как продавать">
+        <button type="button" data-v="instant" aria-pressed="true">Сразу</button>
+        <button type="button" data-v="order" aria-pressed="false">Ордером</button>
+      </div></div>
+      <div class="rb-go"><button class="go" id="go" type="button">Собрать груз</button><button type="button" class="tbtn2" id="moreBtn" aria-expanded="false" aria-controls="runmore">Настройки</button></div>
       <div class="gocap" id="gocap"></div>
       <div class="bar" id="bar" hidden><i></i></div>
+      <div id="runmore" class="runmore" hidden>
+        <div class="quick" id="budgetQuick" hidden><button type="button" data-v="2000000">2 млн</button></div>
+        <div class="chipgroup"><span class="lbl">Что возить</span><div class="chips" id="cats"></div></div>
+        <div class="rm-two"><div class="chipgroup"><span class="lbl">Тир</span><div class="chips" id="tiers"></div></div>
+        <div class="chipgroup"><span class="lbl">Зачарование</span><div class="chips" id="enchs"></div></div></div>
+        <div class="rm-sw">
+          <label class="switch"><input type="checkbox" id="premium"> Премиум</label>
+          <label class="switch"><input type="checkbox" id="fresh"> Только цены до 6 ч</label>
+          <label class="switch"><input type="checkbox" id="auto"> Обновлять каждые 5 мин</label>
+        </div>
+        <details class="adv">
+          <summary>Точные настройки</summary>
+          <div class="advgrid">
+            <div><label for="maxAge">Не брать цены старше, ч</label><input id="maxAge" type="number" min="1" step="1"></div>
+            <div><label for="halfLife">Доверие к цене падает вдвое за, ч</label><input id="halfLife" type="number" min="1" step="1"></div>
+            <div><label for="minRoi">Мин. доходность, %</label><input id="minRoi" type="number" min="0" step="1"></div>
+            <div><label for="maxRoi">Отсекать доходность выше, %</label><input id="maxRoi" type="number" min="10" step="10"></div>
+            <div><label for="minPosProfit">Мин. прибыль с позиции</label><input id="minPosProfit" type="number" min="0" step="500"></div>
+            <div><label for="maxPerPos">Макс. штук одной вещи</label><input id="maxPerPos" type="number" min="1" step="1"></div>
+            <div><label for="share">Доля дневного объёма, %</label><input id="share" type="number" min="1" max="100" step="1"></div>
+            <div><label for="slip">Ухудшение цены за штуку, %</label><input id="slip" type="number" min="0" step="0.5"></div>
+            <div><label for="taxPremium">Налог с премиумом, %</label><input id="taxPremium" type="number" min="0" step="0.5"></div>
+            <div><label for="taxFree">Налог без премиума, %</label><input id="taxFree" type="number" min="0" step="0.5"></div>
+            <div><label for="setupFee">Сбор за ордер, %</label><input id="setupFee" type="number" min="0" step="0.5"></div>
+          </div>
+        </details>
+        <button class="go2" id="cmpgo" type="button">Сравнить все города закупки</button>
+      </div>
     </section>
-
     <section id="result" aria-live="polite"></section>
   </main>
 
@@ -413,7 +435,7 @@ select{border-radius:8px;padding:7px 28px 7px 10px}
     <p>Караван берёт самую дешёвую цену продажи в городе закупки и лучшую цену в городе сбыта, вычитает налог и собирает набор позиций, который даёт максимум прибыли и при этом влезает в твоё серебро и вес. Старые цены часто уже неактуальны, поэтому прибыль умножается на доверие: чем старше цена, тем меньше вклад позиции. Количество ограничено долей дневного объёма продаж, чтобы не везти то, что не продать.</p>
     <p>Это оценка, а не гарантия: перед покупкой сверь цену в игре и вычеркни позицию, если она разошлась. Оставшийся груз пересоберётся сам.</p>
   </details>
-  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>, их присылают сами игроки, поэтому часть цен устарела. Караван не связан с Sandbox Interactive. Настройки и журнал хранятся только в этом браузере. Чтобы цены по нужным тебе вещам были свежими, запусти <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Data Client</a>: он отправляет в базу цены, которые ты открываешь на рынке в игре.</p>
+  <p class="foot">Цены: <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Online Data Project</a>. Чтобы цены были свежее, запусти <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener">Albion Data Client</a>. Караван не связан с Sandbox Interactive.</p>
   </div>
 </div>
 <div id="modal"></div>

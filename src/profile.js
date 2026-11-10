@@ -48,8 +48,8 @@ function renderProfile() {
   if (!FM.scan) need.push('<button type="button" class="tbtn2" data-pp="farm">Посчитать остров</button>');
   el.innerHTML = `<section class="setup"><h2>Профиль</h2>
     <label class="switch" style="margin-bottom:12px"><input type="checkbox" id="pPrem" ${cfg.premium ? 'checked' : ''}> Премиум-статус</label>
-    <div class="fld"><label>Фокуса в день</label>${step('pFocus', c.focusDay, 60000, 1000, 1)}<div class="hint">С премиумом дают 10 000 в день. Если копил, укажи, сколько есть сейчас.</div></div>
-    <div class="hint" style="margin-bottom:8px">Мастерство — уровень общей ветки (например, «Огородник» или «Кузнец»), специализация — уровень на то, что делаешь чаще всего. В последнем столбце — сколько фокуса уходит от обычного.</div>
+    <div class="fld"><label>Фокуса в день</label>${step('pFocus', c.focusDay, 60000, 1000, 1)}<div class="hint">С премиумом — 10 000 в день.</div></div>
+    <div class="hint" style="margin-bottom:8px">Мастерство — уровень ветки, специализация — уровень предмета, который делаешь чаще всего. «Фокус» — доля от обычного расхода.</div>
     <div class="pftable"><table><thead><tr><th>Ветка</th><th>Мастерство</th><th>Специализация</th><th>Фокус</th></tr></thead><tbody>${rows}</tbody></table></div>
     <p class="imeta" style="margin-top:8px">Формула из открытых калькуляторов: расход = базовый × 0,5^(эффективность / 10 000), эффективность = мастерство × 30 + специализация × 250.</p></section>
     <section aria-live="off"><div class="sheet"><div class="sheethead"><h2>Куда лить фокус сегодня</h2><span>${fmt(c.focusDay)} очков</span></div>

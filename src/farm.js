@@ -102,7 +102,7 @@ function farmSetupHTML() {
     <div class="two fld">${num('fFarm', 'Полей', c.farm, 0, 30)}${num('fHerb', 'Садов трав', c.herb, 0, 30)}</div>
     <div class="two fld">${num('fPasture', 'Пастбищ', c.pasture, 0, 30)}${num('fKennel', 'Питомников', c.kennel, 0, 30)}</div>
     <div class="two fld">${num('fSlots', 'Мест на одном участке', c.slots, 1, 20)}${num('fMult', 'Множитель урожая', c.mult, 0.1, 5, 0.1)}</div>
-    <div class="hint" style="margin-top:-6px;margin-bottom:12px">Без премиума урожай и продукты животных считаются вдвое меньше, а налог с продажи выше. Если в игре цифры другие, поправь множитель.</div>
+    
     <span class="lbl">Сколько участков поливать или кормить с фокусом</span>
     <div class="two fld">${num('fwFarm', 'Полей с фокусом', Math.min(c.wFarm || 0, c.farm), 0, c.farm)}${num('fwHerb', 'Садов с фокусом', Math.min(c.wHerb || 0, c.herb), 0, c.herb)}</div>
     <div class="two fld">${num('fwPasture', 'Пастбищ с фокусом', Math.min(c.wPasture || 0, c.pasture), 0, c.pasture)}${num('fwKennel', 'Питомников с фокусом', Math.min(c.wKennel || 0, c.kennel), 0, c.kennel)}</div>
@@ -112,9 +112,9 @@ function farmSetupHTML() {
 
       <label class="switch"><input type="checkbox" id="fOwn" ${c.ownFood ? 'checked' : ''}> Кормить своим урожаем</label>
       <label class="switch"><input type="checkbox" id="fBuyO" ${c.buyOrder ? 'checked' : ''}> Покупать семена и детёнышей через свой ордер</label></div>
-    <div class="hint" style="margin-top:-4px;margin-bottom:12px">Свой урожай считается по цене, за которую ты бы его продал, а не купил. Свой ордер на покупку обычно дешевле, но ждать приходится дольше.</div>
+    
     <button class="go" type="button" data-f="scan" ${FM.busy ? 'disabled' : ''}>${FM.busy ? 'Проверяю цены…' : FM.scan ? 'Обновить цены' : 'Посчитать остров'}</button>
-    <div class="gocap">Налог и премиум берутся из вкладки «Рейс»</div></section>`;
+    </section>`;
 }
 function farmResultHTML() {
   let h = '';
